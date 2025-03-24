@@ -4,12 +4,12 @@ import jakarta.persistence.*;
 
 @Entity
 public class Jugador {
-    private int fichas;
-    private boolean activo;
 
     @Id
-    @Column(unique = true, nullable = false)
     private String id;
+
+    private int fichas;
+    private boolean activo;
 
     @OneToOne(cascade = CascadeType.ALL)
     private Mano mano;
@@ -17,17 +17,21 @@ public class Jugador {
     @ManyToOne
     private Mesa mesa;
 
+    @ManyToOne
+    private Partida partida;
+
     @ManyToOne(optional = false)
     private Usuario usuario;
 
     public Jugador() {}
 
-    public Jugador(Usuario usuario, Mesa mesa) {
+    public Jugador(Usuario usuario, Mesa mesa, Partida partida) {
         this.id = java.util.UUID.randomUUID().toString();
         this.usuario = usuario;
-        this.fichas = usuario.getDinero(); // Puedes limitarlo si solo mete parte del dinero
+        this.fichas = usuario.getDinero();
         this.activo = true;
         this.mesa = mesa;
+        this.partida = partida;
     }
 
     public String getId() {
@@ -64,6 +68,14 @@ public class Jugador {
 
     public void setMesa(Mesa mesa) {
         this.mesa = mesa;
+    }
+
+    public Partida getPartida() {
+        return partida;
+    }
+
+    public void setPartida(Partida partida) {
+        this.partida = partida;
     }
 
     public Usuario getUsuario() {

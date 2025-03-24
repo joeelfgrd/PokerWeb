@@ -15,7 +15,7 @@ public class Mano {
 
     public Mano() {}
 
-    public Mano(Jugador jugador, List<Carta> cartas) {
+    public Mano(List<Carta> cartas) {
         this.cartas = cartas;
     }
 
