@@ -9,16 +9,13 @@ public class Mano {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Carta> cartas;
 
-    @OneToOne
-    private Jugador jugador;
 
     public Mano() {}
 
     public Mano(Jugador jugador, List<Carta> cartas) {
-        this.jugador = jugador;
         this.cartas = cartas;
     }
 
@@ -28,7 +25,5 @@ public class Mano {
     public List<Carta> getCartas() {
         return cartas;
     }
-    public Jugador getJugador() {
-        return jugador;
-    }
+
 }

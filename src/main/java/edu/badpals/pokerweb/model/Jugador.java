@@ -1,16 +1,15 @@
 package edu.badpals.pokerweb.model;
 
 import jakarta.persistence.*;
-import java.util.UUID;
 
 @Entity
 public class Jugador {
-    @Id
-    private String id;
-    
-    private String nombre;
     private int fichas;
     private boolean activo;
+
+    @Id
+    @Column(unique = true, nullable = false)
+    private String id;
 
     @OneToOne(cascade = CascadeType.ALL)
     private Mano mano;
@@ -18,30 +17,21 @@ public class Jugador {
     @ManyToOne
     private Mesa mesa;
 
+    @ManyToOne(optional = false)
+    private Usuario usuario;
+
     public Jugador() {}
 
-    public Jugador(String nombre, Mesa mesa) {
-        this.id = UUID.randomUUID().toString();
-        this.nombre = nombre;
-        this.fichas = 1000;
+    public Jugador(Usuario usuario, Mesa mesa) {
+        this.id = java.util.UUID.randomUUID().toString();
+        this.usuario = usuario;
+        this.fichas = usuario.getDinero(); // Puedes limitarlo si solo mete parte del dinero
         this.activo = true;
         this.mesa = mesa;
     }
 
     public String getId() {
         return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
     }
 
     public int getFichas() {
@@ -74,5 +64,13 @@ public class Jugador {
 
     public void setMesa(Mesa mesa) {
         this.mesa = mesa;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public String getNombre() {
+        return usuario.getNombreCompleto();
     }
 }

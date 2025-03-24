@@ -3,7 +3,6 @@ package edu.badpals.pokerweb.model;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 public class Baraja {
     private final List<Carta> listaCartas;
 
@@ -14,14 +13,10 @@ public class Baraja {
 
     public void inicializarYBarajar() {
         listaCartas.clear();
-        String[] palos = {"Corazones", "Diamantes", "Tréboles", "Picas"};
-        int[] idPalos = {0, 1, 2, 3};
-        String[] valores = {"2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"};
-        int[] numerosvalor = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
 
-        for (int i = 0; i < palos.length; i++) {
-            for (int j = 0; j < valores.length; j++) {
-                listaCartas.add(new Carta(palos[i], valores[j], numerosvalor[j], idPalos[i]));
+        for (Palo palo : Palo.values()) {
+            for (ValorCarta valor : ValorCarta.values()) {
+                listaCartas.add(new Carta(palo, valor));
             }
         }
         barajar();

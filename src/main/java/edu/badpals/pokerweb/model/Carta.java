@@ -1,74 +1,36 @@
 package edu.badpals.pokerweb.model;
 
 import jakarta.persistence.*;
-
-
 @Entity
 public class Carta {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String palo;
-    private String valor;
-    private int numero;
-    private int idPalo;
+    @Enumerated(EnumType.STRING)
+    private Palo palo;
 
-    public Carta(String palo, String valore, int numero, int idPalo) {
+    @Enumerated(EnumType.STRING)
+    private ValorCarta valor;
+
+    public Carta() {}
+
+    public Carta(Palo palo, ValorCarta valor) {
         this.palo = palo;
-        this.valor = valore;
-        this.numero = numero;
-        this.idPalo = idPalo;
-    }
-
-    public Carta() {
-    }
-
-    public Carta(String palo, Long id, String valor, int numero, int idPalo) {
-        this.palo = palo;
-        this.id = id;
-        this.valor = valor;
-        this.numero = numero;
-        this.idPalo = idPalo;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getPalo() {
-        return palo;
-    }
-
-    public void setPalo(String palo) {
-        this.palo = palo;
-    }
-
-    public String getValor() {
-        return valor;
-    }
-
-    public void setValor(String valor) {
         this.valor = valor;
     }
 
     public int getNumero() {
-        return numero;
-    }
-
-    public void setNumero(int numero) {
-        this.numero = numero;
+        return valor.getNumero();
     }
 
     public int getIdPalo() {
-        return idPalo;
+        return palo.getId();
     }
 
-    public void setIdPalo(int idPalo) {
-        this.idPalo = idPalo;
+    public String getValorString() {
+        return valor.getValor();
     }
 }
+
+
