@@ -1,4 +1,4 @@
-package edu.badpals.pokerweb.model;
+package edu.badpals.pokerweb.model.enums;
 
 public enum ValorCarta {
     DOS("2", 2),

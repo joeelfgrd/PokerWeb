@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb.model;
 
+import edu.badpals.pokerweb.model.enums.EstadoPartida;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

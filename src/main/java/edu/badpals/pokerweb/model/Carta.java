@@ -1,5 +1,7 @@
 package edu.badpals.pokerweb.model;
 
+import edu.badpals.pokerweb.model.enums.Palo;
+import edu.badpals.pokerweb.model.enums.ValorCarta;
 import jakarta.persistence.*;
 @Entity
 public class Carta {

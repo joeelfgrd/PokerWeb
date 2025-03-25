@@ -1,5 +1,8 @@
 package edu.badpals.pokerweb.model;
 
+import edu.badpals.pokerweb.model.enums.Palo;
+import edu.badpals.pokerweb.model.enums.ValorCarta;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
