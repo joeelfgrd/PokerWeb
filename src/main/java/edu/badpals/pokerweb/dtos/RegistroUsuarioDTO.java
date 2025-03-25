@@ -1,12 +1,28 @@
 package edu.badpals.pokerweb.dtos;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 /*CREO UNA CLASE PARA GESTIONAR EL POST QUE SE HACE CUANDO SE REGISTRA*/
 public class RegistroUsuarioDTO {
+    @NotBlank(message = "El nombre completo es obligatorio")
     private String nombreCompleto;
+
+    @NotBlank(message = "El DNI es obligatorio")
     private String dni;
+
+    @NotNull(message = "La fecha de nacimiento es obligatoria")
     private LocalDate fechaNacimiento;
+
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "Formato de email inválido")
     private String email;
+
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     private String password;
 
     public RegistroUsuarioDTO() {}
