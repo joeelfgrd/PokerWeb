@@ -1,4 +1,4 @@
-package edu.badpals.pokerweb.controller;
+package edu.badpals.pokerweb.rest;
 
 import edu.badpals.pokerweb.dtos.RegistroUsuarioDTO;
 import edu.badpals.pokerweb.dtos.LoginDTO;
