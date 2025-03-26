@@ -78,5 +78,16 @@ public class PartidaController {
         }
     }
 
+    @PostMapping("/{idPartida}/unirse")
+    public ResponseEntity<Partida> unirseAPartida(@PathVariable String idPartida, @RequestParam String usuario) {
+        try {
+            Partida partida = partidaService.unirseAPartida(idPartida, usuario);
+            return ResponseEntity.ok(partida);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+
 
 }

@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import edu.badpals.pokerweb.model.enums.EstadoPartida;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public class Partida {
     private String id;
 
     @ManyToOne
+    @JsonBackReference
     private Mesa mesa;
 
     @OneToMany(mappedBy = "partida", cascade = CascadeType.ALL)

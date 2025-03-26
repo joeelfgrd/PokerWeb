@@ -24,7 +24,9 @@ public class SecurityConfig {
                                 "/api/partidas/{id}/flop",
                                 "/api/partidas/{id}/turn",
                                 "/api/partidas/{id}/river",
-                                "/api/partidas/{id}/mano-privada"
+                                "/api/partidas/{id}/mano-privada",
+                                "/api/partidas/{id}/nueva-mano",
+                                "/api/partidas/{id}/unirse"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

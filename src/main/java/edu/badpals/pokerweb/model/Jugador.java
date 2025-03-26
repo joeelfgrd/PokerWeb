@@ -16,6 +16,7 @@ public class Jugador {
     private Mano mano;
 
     @ManyToOne
+    @JsonBackReference
     private Mesa mesa;
 
     @ManyToOne

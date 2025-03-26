@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +13,11 @@ public class Mesa {
     private String id;
 
     @OneToMany(mappedBy = "mesa", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Jugador> jugadores = new ArrayList<>();
 
     @OneToMany(mappedBy = "mesa", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Partida> partidas = new ArrayList<>();
 
     public Mesa() {

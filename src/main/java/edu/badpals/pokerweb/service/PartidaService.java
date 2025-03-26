@@ -402,4 +402,32 @@ public class PartidaService {
         return partida;
     }
 
+    @Transactional
+    public Partida unirseAPartida(String idPartida, String idUsuario) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        for (Jugador jugador : partida.getJugadores()) {
+            if (jugador.getUsuario().getId().equals(idUsuario)) {
+                throw new RuntimeException("El usuario ya está unido a esta partida");
+            }
+        }
+
+        if (partida.getJugadores().size() >= 10) {
+            throw new RuntimeException("La partida ya tiene el máximo de 10 jugadores");
+        }
+
+        Mesa mesa = partida.getMesa();
+        Jugador nuevoJugador = new Jugador(usuario, mesa, partida);
+        partida.getJugadores().add(nuevoJugador);
+
+        partidaRepository.save(partida);
+        return partida;
+    }
+
+
+
 }
