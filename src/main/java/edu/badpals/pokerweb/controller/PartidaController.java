@@ -1,11 +1,14 @@
 package edu.badpals.pokerweb.controller;
 
 import edu.badpals.pokerweb.dtos.CrearPartidaDTO;
+import edu.badpals.pokerweb.model.Carta;
 import edu.badpals.pokerweb.model.Partida;
 import edu.badpals.pokerweb.service.PartidaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/partidas")
@@ -23,5 +26,16 @@ public class PartidaController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping("/{id}/flop")
+    public ResponseEntity<List<Carta>> repartirFlop(@PathVariable String id) {
+        try {
+            List<Carta> flop = partidaService.repartirFlop(id);
+            return ResponseEntity.ok(flop);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
 
 }
