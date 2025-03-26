@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/partidas")
@@ -57,5 +58,14 @@ public class PartidaController {
         }
     }
 
+    @PostMapping("/{idPartida}/mano-privada")
+    public ResponseEntity<Map<String, List<Carta>>> repartirManosPrivadas(@PathVariable String idPartida) {
+        try {
+            Map<String, List<Carta>> manos = partidaService.repartirManosPrivadas(idPartida);
+            return ResponseEntity.ok(manos);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
 }

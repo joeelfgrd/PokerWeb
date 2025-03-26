@@ -10,7 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PartidaService {
@@ -93,6 +95,35 @@ public class PartidaService {
 
         return river;
     }
+
+    @Transactional
+    public Map<String, List<Carta>> repartirManosPrivadas(String idPartida) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        Baraja baraja = GameSessionManager.getBaraja(idPartida);
+
+        if (baraja == null) {
+            throw new RuntimeException("La partida no está activa o no se ha inicializado la baraja");
+        }
+
+        Map<String, List<Carta>> manosRepartidas = new HashMap<>();
+
+        for (Jugador jugador : partida.getJugadores()) {
+            List<Carta> manoJugador = new ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                manoJugador.add(baraja.repartirCarta());
+            }
+
+            Mano mano = new Mano(manoJugador);
+            jugador.setMano(mano);
+            manosRepartidas.put(jugador.getId(), manoJugador);
+        }
+
+        partidaRepository.save(partida);
+        return manosRepartidas;
+    }
+
 
 
 

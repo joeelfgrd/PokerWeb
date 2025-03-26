@@ -2,6 +2,7 @@ package edu.badpals.pokerweb.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -22,13 +23,16 @@ public class SecurityConfig {
                                 "/api/partidas/crear",
                                 "/api/partidas/{id}/flop",
                                 "/api/partidas/{id}/turn",
-                                "/api/partidas/{id}/river"
-                                ).permitAll()
+                                "/api/partidas/{id}/river",
+                                "/api/partidas/{id}/mano-privada"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+                .httpBasic(Customizer.withDefaults())  // 👈 esto faltaba
                 .build();
     }
+
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
