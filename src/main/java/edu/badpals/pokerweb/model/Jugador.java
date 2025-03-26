@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 @Entity
@@ -18,6 +19,7 @@ public class Jugador {
     private Mesa mesa;
 
     @ManyToOne
+    @JsonBackReference
     private Partida partida;
 
     @ManyToOne(optional = false)

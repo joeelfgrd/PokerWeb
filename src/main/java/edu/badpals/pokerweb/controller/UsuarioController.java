@@ -5,7 +5,6 @@ import edu.badpals.pokerweb.dtos.LoginDTO;
 import edu.badpals.pokerweb.dtos.UsuarioLogueadoDTO;
 import edu.badpals.pokerweb.service.UsuarioService;
 import edu.badpals.pokerweb.service.UsuarioService.LoginStatus;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +17,7 @@ public class UsuarioController {
     private UsuarioService usuarioService;
 
     @PostMapping("/registro")
-    public ResponseEntity<UsuarioLogueadoDTO> registrar(@Valid @RequestBody RegistroUsuarioDTO dto) {
+    public ResponseEntity<UsuarioLogueadoDTO> registrar(@RequestBody RegistroUsuarioDTO dto) {
         try {
             UsuarioLogueadoDTO usuarioRegistrado = usuarioService.registrar(dto);
             return ResponseEntity.ok(usuarioRegistrado);
@@ -28,7 +27,7 @@ public class UsuarioController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UsuarioLogueadoDTO> login(@Valid @RequestBody LoginDTO dto) {
+    public ResponseEntity<UsuarioLogueadoDTO> login(@RequestBody LoginDTO dto) {
         LoginStatus status = usuarioService.login(dto);
 
         if (status == LoginStatus.LOGIN_OK) {
