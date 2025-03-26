@@ -51,6 +51,9 @@ public class PartidaService {
                 .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
 
         Baraja baraja = GameSessionManager.getBaraja(idPartida);
+
+        baraja.repartirCarta();
+
         List<Carta> flop = new ArrayList<>();
         for (int i = 0; i < 3; i++) {
             Carta carta = baraja.repartirCarta();
@@ -62,6 +65,7 @@ public class PartidaService {
         return flop;
     }
 
+
     @Transactional
     public Carta repartirTurn(String idPartida) {
         Partida partida = partidaRepository.findById(idPartida)
@@ -72,12 +76,16 @@ public class PartidaService {
         }
 
         Baraja baraja = GameSessionManager.getBaraja(idPartida);
+
+        baraja.repartirCarta();
+
         Carta turn = baraja.repartirCarta();
         partida.getCartasComunitarias().add(turn);
         partidaRepository.save(partida);
 
         return turn;
     }
+
 
     @Transactional
     public Carta repartirRiver(String idPartida) {
@@ -89,6 +97,9 @@ public class PartidaService {
         }
 
         Baraja baraja = GameSessionManager.getBaraja(idPartida);
+
+        baraja.repartirCarta();
+
         Carta river = baraja.repartirCarta();
         partida.getCartasComunitarias().add(river);
         partidaRepository.save(partida);
