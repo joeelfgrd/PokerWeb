@@ -37,5 +37,25 @@ public class PartidaController {
         }
     }
 
+    @PostMapping("/{idPartida}/turn")
+    public ResponseEntity<Carta> repartirTurn(@PathVariable String idPartida) {
+        try {
+            Carta turn = partidaService.repartirTurn(idPartida);
+            return ResponseEntity.ok(turn);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/{idPartida}/river")
+    public ResponseEntity<Carta> repartirRiver(@PathVariable String idPartida) {
+        try {
+            Carta river = partidaService.repartirRiver(idPartida);
+            return ResponseEntity.ok(river);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
 
 }

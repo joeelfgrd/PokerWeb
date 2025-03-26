@@ -15,7 +15,15 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/usuarios/login", "/api/usuarios/registro", "/h2-console/**","/api/partidas/crear","/api/partidas/{id}/flop").permitAll()
+                        .requestMatchers(
+                                "/api/usuarios/login",
+                                "/api/usuarios/registro",
+                                "/h2-console/**",
+                                "/api/partidas/crear",
+                                "/api/partidas/{id}/flop",
+                                "/api/partidas/{id}/turn",
+                                "/api/partidas/{id}/river"
+                                ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
