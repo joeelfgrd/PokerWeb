@@ -135,7 +135,38 @@ public class PartidaService {
         return manosRepartidas;
     }
 
+    @Transactional
+    public Partida apostar(String idPartida, String idJugador, int cantidad) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
 
+        Jugador jugador = partida.getJugadores().stream()
+                .filter(j -> j.getId().equals(idJugador))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
 
+        if (!jugador.isActivo() || jugador.getFichas() < cantidad) {
+            throw new RuntimeException("El jugador no puede apostar esa cantidad");
+        }
 
+        jugador.setFichas(jugador.getFichas() - cantidad);
+
+        partida.setBote(partida.getBote() + cantidad);
+
+        Map<String, Integer> apuestas = partida.getApuestasActuales();
+        apuestas.put(jugador.getId(), apuestas.getOrDefault(jugador.getId(), 0) + cantidad);
+
+        partidaRepository.save(partida);
+        return partida;
+    }
+
+    public Partida igualar(String idPartida, String idJugador){
+        return null;
+    }
+    public Partida pasar(String idPartida, String idJugador) {
+        return null;
+    }
+    public Partida retirarse(String idPartida, String idJugador){
+        return null;
+    }
 }

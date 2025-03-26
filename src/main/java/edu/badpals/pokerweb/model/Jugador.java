@@ -25,6 +25,8 @@ public class Jugador {
     @ManyToOne(optional = false)
     private Usuario usuario;
 
+    private boolean allIn = false;
+
     public Jugador() {}
 
     public Jugador(Usuario usuario, Mesa mesa, Partida partida) {
@@ -86,5 +88,13 @@ public class Jugador {
 
     public String getNombre() {
         return usuario.getNombreCompleto();
+    }
+
+    public boolean isAllIn() {
+        return allIn;
+    }
+
+    public void setAllIn(boolean allIn) {
+        this.allIn = allIn;
     }
 }

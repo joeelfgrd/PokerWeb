@@ -3,9 +3,7 @@ package edu.badpals.pokerweb.model;
 import edu.badpals.pokerweb.model.enums.EstadoPartida;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 public class Partida {
@@ -26,6 +24,12 @@ public class Partida {
 
     @Enumerated(EnumType.STRING)
     private EstadoPartida estado = EstadoPartida.EN_CURSO;
+
+    private int bote;
+
+    @ElementCollection
+    private Map<String, Integer> apuestasActuales = new HashMap<>();
+
 
     public Partida() {
         this.id = UUID.randomUUID().toString();
@@ -95,5 +99,21 @@ public class Partida {
 
     public void setIdGanador(String idGanador) {
         this.idGanador = idGanador;
+    }
+
+    public int getBote() {
+        return bote;
+    }
+
+    public void setBote(int bote) {
+        this.bote = bote;
+    }
+
+    public Map<String, Integer> getApuestasActuales() {
+        return apuestasActuales;
+    }
+
+    public void setApuestasActuales(Map<String, Integer> apuestasActuales) {
+        this.apuestasActuales = apuestasActuales;
     }
 }
