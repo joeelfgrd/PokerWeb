@@ -364,4 +364,42 @@ public class PartidaService {
         partidaRepository.save(partida);
         return partida;
     }
+
+    @Transactional
+    public Partida iniciarNuevaMano(String idPartida) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        int jugadoresConFichas = 0;
+        for (Jugador jugador : partida.getJugadores()) {
+            if (jugador.getFichas() > 0) {
+                jugadoresConFichas++;
+            }
+        }
+
+        if (jugadoresConFichas < 2) {
+            throw new RuntimeException("La partida ha terminado. No hay suficientes jugadores con fichas.");
+        }
+
+        GameSessionManager.iniciarNuevaMano(partida);
+
+        partida.getApuestasActuales().clear();
+        partida.getCartasComunitarias().clear();
+        partida.setBote(0);
+
+        for (Jugador jugador : partida.getJugadores()) {
+            if (jugador.getFichas() > 0) {
+                jugador.setActivo(true);
+                jugador.setAllIn(false);
+            } else {
+                jugador.setActivo(false);
+                jugador.setAllIn(false);
+                jugador.setMano(null);
+            }
+        }
+
+        partidaRepository.save(partida);
+        return partida;
+    }
+
 }

@@ -68,4 +68,15 @@ public class PartidaController {
         }
     }
 
+    @PostMapping("/{idPartida}/nueva-mano")
+    public ResponseEntity<Partida> nuevaMano(@PathVariable String idPartida) {
+        try {
+            Partida nuevaMano = partidaService.iniciarNuevaMano(idPartida);
+            return ResponseEntity.ok(nuevaMano);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+
 }
