@@ -2,6 +2,7 @@ package edu.badpals.pokerweb.service;
 
 import edu.badpals.pokerweb.auxiliar.GameSessionManager;
 import edu.badpals.pokerweb.model.*;
+import edu.badpals.pokerweb.model.enums.FaseJuego;
 import edu.badpals.pokerweb.repository.MesaRepository;
 import edu.badpals.pokerweb.repository.PartidaRepository;
 import edu.badpals.pokerweb.repository.UsuarioRepository;
@@ -157,16 +158,210 @@ public class PartidaService {
         apuestas.put(jugador.getId(), apuestas.getOrDefault(jugador.getId(), 0) + cantidad);
 
         partidaRepository.save(partida);
-        return partida;
+        return avanzarFaseSiCorresponde(idPartida);
     }
 
-    public Partida igualar(String idPartida, String idJugador){
-        return null;
+    @Transactional
+    public Partida igualar(String idPartida, String idJugador) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        Jugador jugador = partida.getJugadores().stream()
+                .filter(j -> j.getId().equals(idJugador))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
+
+        if (!jugador.isActivo()) {
+            throw new RuntimeException("Jugador no está activo");
+        }
+
+        Map<String, Integer> apuestas = partida.getApuestasActuales();
+        int apuestaActualJugador = apuestas.getOrDefault(jugador.getId(), 0);
+
+        int apuestaMaxima = 0;
+        for (Integer apuesta : apuestas.values()) {
+            if (apuesta > apuestaMaxima) {
+                apuestaMaxima = apuesta;
+            }
+        }
+
+        int diferencia = apuestaMaxima - apuestaActualJugador;
+
+        if (diferencia <= 0) {
+            return partida;
+        }
+
+        if (jugador.getFichas() < diferencia) {
+            throw new RuntimeException("No tienes suficientes fichas para igualar. Debes hacer all-in");
+        }
+
+        jugador.setFichas(jugador.getFichas() - diferencia);
+        partida.setBote(partida.getBote() + diferencia);
+        apuestas.put(jugador.getId(), apuestaActualJugador + diferencia);
+
+        partidaRepository.save(partida);
+        return avanzarFaseSiCorresponde(idPartida);
     }
+
+
+    @Transactional
     public Partida pasar(String idPartida, String idJugador) {
-        return null;
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        Jugador jugador = partida.getJugadores().stream()
+                .filter(j -> j.getId().equals(idJugador))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
+
+        if (!jugador.isActivo()) {
+            throw new RuntimeException("Jugador no está activo");
+        }
+
+        Map<String, Integer> apuestas = partida.getApuestasActuales();
+        int apuestaJugador = apuestas.getOrDefault(jugador.getId(), 0);
+
+        int apuestaMaxima = 0;
+        for (Integer apuesta : apuestas.values()) {
+            if (apuesta > apuestaMaxima) {
+                apuestaMaxima = apuesta;
+            }
+        }
+
+        if (apuestaJugador < apuestaMaxima) {
+            throw new RuntimeException("No puedes pasar, hay una apuesta que debes igualar.");
+        }
+
+        return avanzarFaseSiCorresponde(idPartida);
     }
-    public Partida retirarse(String idPartida, String idJugador){
-        return null;
+
+    @Transactional
+    public Partida retirarse(String idPartida, String idJugador) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        Jugador jugador = partida.getJugadores().stream()
+                .filter(j -> j.getId().equals(idJugador))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
+
+        if (!jugador.isActivo()) {
+            throw new RuntimeException("Jugador ya está fuera de la mano");
+        }
+
+        Map<String, Integer> apuestas = partida.getApuestasActuales();
+        int apuestaAcumulada = apuestas.getOrDefault(jugador.getId(), 0);
+
+        partida.setBote(partida.getBote() + apuestaAcumulada);
+
+        apuestas.remove(jugador.getId());
+
+        jugador.setActivo(false);
+        jugador.setMano(null);
+
+        partidaRepository.save(partida);
+        return avanzarFaseSiCorresponde(idPartida);
+    }
+
+
+    @Transactional
+    public Partida allIn(String idPartida, String idJugador) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        Jugador jugador = partida.getJugadores().stream()
+                .filter(j -> j.getId().equals(idJugador))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
+
+        if (!jugador.isActivo()) {
+            throw new RuntimeException("Jugador no está activo");
+        }
+
+        int fichas = jugador.getFichas();
+        if (fichas <= 0) {
+            throw new RuntimeException("El jugador no tiene fichas suficientes");
+        }
+
+        jugador.setFichas(0);
+        jugador.setAllIn(true);
+        partida.setBote(partida.getBote() + fichas);
+
+        Map<String, Integer> apuestas = partida.getApuestasActuales();
+        int apuestaActual = apuestas.getOrDefault(jugador.getId(), 0);
+        apuestas.put(jugador.getId(), apuestaActual + fichas);
+
+        partidaRepository.save(partida);
+        return avanzarFaseSiCorresponde(idPartida);
+    }
+
+    public boolean rondaDeApuestasFinalizada(Partida partida) {
+        Map<String, Integer> apuestas = partida.getApuestasActuales();
+        int apuestaMaxima = 0;
+
+        for (Integer cantidad : apuestas.values()) {
+            if (cantidad > apuestaMaxima) {
+                apuestaMaxima = cantidad;
+            }
+        }
+
+        int jugadoresActivos = 0;
+
+        for (Jugador jugador : partida.getJugadores()) {
+            if (jugador.isActivo()) {
+                if (!jugador.isAllIn()) {
+                    jugadoresActivos++;
+
+                    int apuestaJugador = 0;
+                    if (apuestas.containsKey(jugador.getId())) {
+                        apuestaJugador = apuestas.get(jugador.getId());
+                    }
+
+                    if (apuestaJugador < apuestaMaxima) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    @Transactional
+    public Partida avanzarFaseSiCorresponde(String idPartida) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        if (!rondaDeApuestasFinalizada(partida)) {
+            return partida;
+        }
+
+        partida.getApuestasActuales().clear();
+
+        GameSessionManager.avanzarFase(idPartida);
+
+        FaseJuego nuevaFase = GameSessionManager.getFase(idPartida);
+        Baraja baraja = GameSessionManager.getBaraja(idPartida);
+
+        if (nuevaFase == FaseJuego.FLOP) {
+            baraja.repartirCarta();
+            for (int i = 0; i < 3; i++) {
+                Carta carta = baraja.repartirCarta();
+                partida.getCartasComunitarias().add(carta);
+            }
+        } else if (nuevaFase == FaseJuego.TURN) {
+            baraja.repartirCarta();
+            Carta turn = baraja.repartirCarta();
+            partida.getCartasComunitarias().add(turn);
+        } else if (nuevaFase == FaseJuego.RIVER) {
+            baraja.repartirCarta();
+            Carta river = baraja.repartirCarta();
+            partida.getCartasComunitarias().add(river);
+        } else if (nuevaFase == FaseJuego.SHOWDOWN) {
+            // En esta fase se debería calcular el ganador y repartir el bote (aún por implementar)
+        }
+
+        partidaRepository.save(partida);
+        return partida;
     }
 }
