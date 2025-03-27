@@ -5,6 +5,9 @@ import edu.badpals.pokerweb.dtos.LoginDTO;
 import edu.badpals.pokerweb.dtos.UsuarioLogueadoDTO;
 import edu.badpals.pokerweb.service.UsuarioService;
 import edu.badpals.pokerweb.service.UsuarioService.LoginStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +19,11 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @Operation(summary = "Registro de usuario", description = "Registra un nuevo usuario en la plataforma")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Usuario registrado correctamente"),
+            @ApiResponse(responseCode = "400", description = "Error en el registro")
+    })
     @PostMapping("/registro")
     public ResponseEntity<UsuarioLogueadoDTO> registrar(@RequestBody RegistroUsuarioDTO dto) {
         try {
@@ -26,6 +34,14 @@ public class UsuarioController {
         }
     }
 
+    @Operation(summary = "Login de usuario", description = "Autentica a un usuario con email y contraseña")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Login exitoso"),
+            @ApiResponse(responseCode = "401", description = "Contraseña incorrecta"),
+            @ApiResponse(responseCode = "403", description = "Usuario bloqueado"),
+            @ApiResponse(responseCode = "404", description = "Usuario no encontrado"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @PostMapping("/login")
     public ResponseEntity<UsuarioLogueadoDTO> login(@RequestBody LoginDTO dto) {
         LoginStatus status = usuarioService.login(dto);

@@ -1,12 +1,18 @@
 package edu.badpals.pokerweb.security;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.modelmapper.ModelMapper;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+
+import static org.springframework.security.web.util.matcher.AntPathRequestMatcher.antMatcher;
 
 @Configuration
 public class SecurityConfig {
@@ -16,25 +22,36 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/usuarios/login",
-                                "/api/usuarios/registro",
-                                "/h2-console/**",
-                                "/api/partidas/crear",
-                                "/api/partidas/{id}/flop",
-                                "/api/partidas/{id}/turn",
-                                "/api/partidas/{id}/river",
-                                "/api/partidas/{id}/mano-privada",
-                                "/api/partidas/{id}/nueva-mano",
-                                "/api/partidas/{id}/unirse"
-                        ).permitAll()
+                        .requestMatchers(antMatcher("/api/usuarios/login")).permitAll()
+                        .requestMatchers(antMatcher("/api/usuarios/registro")).permitAll()
+                        .requestMatchers(antMatcher("/h2-console/**")).permitAll()
+                        .requestMatchers(antMatcher("/api/partidas/crear")).permitAll()
+                        .requestMatchers(antMatcher("/api/partidas/*/flop")).permitAll()
+                        .requestMatchers(antMatcher("/api/partidas/*/turn")).permitAll()
+                        .requestMatchers(antMatcher("/api/partidas/*/river")).permitAll()
+                        .requestMatchers(antMatcher("/api/partidas/*/mano-privada")).permitAll()
+                        .requestMatchers(antMatcher("/api/partidas/*/nueva-mano")).permitAll()
+                        .requestMatchers(antMatcher("/api/partidas/*/unirse")).permitAll()
+                        .requestMatchers(antMatcher("/v3/api-docs/**")).permitAll()
+                        .requestMatchers(antMatcher("/swagger-ui/**")).permitAll()
+                        .requestMatchers(antMatcher("/swagger-ui.html")).permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                .httpBasic(Customizer.withDefaults())  // 👈 esto faltaba
+                .httpBasic(Customizer.withDefaults())
                 .build();
     }
 
+    @Bean
+    public UserDetailsService userDetailsService() {
+        UserDetails user = User.builder()
+                .username("joel")
+                .password(passwordEncoder().encode("root"))
+                .roles("ADMIN")
+                .build();
+
+        return new InMemoryUserDetailsManager(user);
+    }
 
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
