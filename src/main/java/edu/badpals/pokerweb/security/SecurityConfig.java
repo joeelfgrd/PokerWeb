@@ -21,17 +21,21 @@ public class SecurityConfig {
                                 "/api/usuarios/registro",
                                 "/h2-console/**",
                                 "/api/partidas/crear",
-                                "/api/partidas/{id}/flop",
-                                "/api/partidas/{id}/turn",
-                                "/api/partidas/{id}/river",
                                 "/api/partidas/{id}/mano-privada",
                                 "/api/partidas/{id}/nueva-mano",
-                                "/api/partidas/{id}/unirse"
+                                "/api/partidas/{id}/unirse",
+                                "/api/partidas/{id}/showdown",
+                                "/api/partidas/{id}/apostar",
+                                "/api/partidas/{id}/igualar",
+                                "/api/partidas/{id}/pasar",
+                                "/api/partidas/{id}/retirarse",
+                                "/api/partidas/{id}/allin",
+                                "/api/partidas/{id}/estado"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                .httpBasic(Customizer.withDefaults())  // 👈 esto faltaba
+                .httpBasic(Customizer.withDefaults())
                 .build();
     }
 

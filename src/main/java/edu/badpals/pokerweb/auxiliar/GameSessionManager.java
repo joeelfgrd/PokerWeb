@@ -17,28 +17,6 @@ public class GameSessionManager {
         fasePartida.put(partida.getId(), FaseJuego.PREFLOP);
     }
 
-    public static void iniciarNuevaMano(Partida partida) {
-        String partidaId = partida.getId();
-        Baraja baraja = new Baraja();
-        barajaPartida.put(partidaId, baraja);
-
-        partida.getCartasComunitarias().clear();
-
-        for (Jugador jugador : partida.getJugadores()) {
-            if (jugador.isActivo() && jugador.getFichas() > 0) {
-                List<Carta> cartas = new ArrayList<>();
-                cartas.add(baraja.repartirCarta());
-                cartas.add(baraja.repartirCarta());
-                jugador.setMano(new Mano(cartas));
-            } else {
-                jugador.setMano(null);
-                jugador.setActivo(false);
-            }
-        }
-        turnoJugadoresPartida.put(partidaId, 0);
-        fasePartida.put(partidaId, FaseJuego.PREFLOP);
-    }
-
     public static Baraja getBaraja(String partidaId) {
         return barajaPartida.get(partidaId);
     }
@@ -73,6 +51,12 @@ public class GameSessionManager {
     public static void avanzarFase(String partidaId) {
         FaseJuego actual = getFase(partidaId);
         fasePartida.put(partidaId, actual.siguiente());
+        turnoJugadoresPartida.put(partidaId, 0);
+    }
+
+    public static void reiniciarFaseYBaraja(String partidaId) {
+        barajaPartida.put(partidaId, new Baraja());
+        fasePartida.put(partidaId, FaseJuego.PREFLOP);
         turnoJugadoresPartida.put(partidaId, 0);
     }
 }

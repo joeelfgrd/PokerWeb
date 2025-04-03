@@ -32,6 +32,9 @@ public class Partida {
     @ElementCollection
     private Map<String, Integer> apuestasActuales = new HashMap<>();
 
+    @ElementCollection
+    private Set<String> jugadoresQueHanActuado = new HashSet<>();
+
 
     public Partida() {
         this.id = UUID.randomUUID().toString();
@@ -117,5 +120,13 @@ public class Partida {
 
     public void setApuestasActuales(Map<String, Integer> apuestasActuales) {
         this.apuestasActuales = apuestasActuales;
+    }
+
+    public Set<String> getJugadoresQueHanActuado() {
+        return jugadoresQueHanActuado;
+    }
+
+    public void setJugadoresQueHanActuado(Set<String> jugadoresQueHanActuado) {
+        this.jugadoresQueHanActuado = jugadoresQueHanActuado;
     }
 }

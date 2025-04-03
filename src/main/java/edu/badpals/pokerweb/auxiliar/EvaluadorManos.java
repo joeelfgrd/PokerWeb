@@ -124,17 +124,22 @@ public class EvaluadorManos {
     }
 
     private static boolean tieneDoblePareja(List<Carta> cartas) {
-        int parejas = 0;
-        Map<Integer, Integer> conteo = new HashMap<>();
+        Map<Integer, Integer> contadorCartas = new HashMap<>();
         for (Carta carta : cartas) {
             int valor = carta.getNumero();
-            conteo.put(valor, conteo.getOrDefault(valor, 0) + 1);
+            contadorCartas.put(valor, contadorCartas.getOrDefault(valor, 0) + 1);
         }
-        for (int count : conteo.values()) {
-            if (count >= 2) parejas++;
+
+        int parejas = 0;
+        for (int count : contadorCartas.values()) {
+            if (count >= 2) {
+                parejas++;
+            }
         }
+
         return parejas >= 2;
     }
+
 
     private static boolean tienePareja(List<Carta> cartas) {
         return contarRepeticiones(cartas, 2);

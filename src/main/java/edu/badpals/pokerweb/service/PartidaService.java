@@ -1,6 +1,9 @@
 package edu.badpals.pokerweb.service;
 
+import edu.badpals.pokerweb.auxiliar.EvaluadorManos;
 import edu.badpals.pokerweb.auxiliar.GameSessionManager;
+import edu.badpals.pokerweb.dtos.EstadoJugadorDTO;
+import edu.badpals.pokerweb.dtos.EstadoPartidaDTO;
 import edu.badpals.pokerweb.model.*;
 import edu.badpals.pokerweb.model.enums.FaseJuego;
 import edu.badpals.pokerweb.repository.MesaRepository;
@@ -47,68 +50,6 @@ public class PartidaService {
     }
 
     @Transactional
-    public List<Carta> repartirFlop(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
-        baraja.repartirCarta();
-
-        List<Carta> flop = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            Carta carta = baraja.repartirCarta();
-            partida.getCartasComunitarias().add(carta);
-            flop.add(carta);
-        }
-
-        partidaRepository.save(partida);
-        return flop;
-    }
-
-
-    @Transactional
-    public Carta repartirTurn(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        if (partida.getCartasComunitarias().size() < 3) {
-            throw new RuntimeException("Primero debes repartir el flop");
-        }
-
-        Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
-        baraja.repartirCarta();
-
-        Carta turn = baraja.repartirCarta();
-        partida.getCartasComunitarias().add(turn);
-        partidaRepository.save(partida);
-
-        return turn;
-    }
-
-
-    @Transactional
-    public Carta repartirRiver(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        if (partida.getCartasComunitarias().size() < 4) {
-            throw new RuntimeException("Primero debes repartir el turn");
-        }
-
-        Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
-        baraja.repartirCarta();
-
-        Carta river = baraja.repartirCarta();
-        partida.getCartasComunitarias().add(river);
-        partidaRepository.save(partida);
-
-        return river;
-    }
-
-    @Transactional
     public Map<String, List<Carta>> repartirManosPrivadas(String idPartida) {
         Partida partida = partidaRepository.findById(idPartida)
                 .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
@@ -150,6 +91,9 @@ public class PartidaService {
             throw new RuntimeException("El jugador no puede apostar esa cantidad");
         }
 
+        partida.getJugadoresQueHanActuado().add(idJugador);
+
+
         jugador.setFichas(jugador.getFichas() - cantidad);
 
         partida.setBote(partida.getBote() + cantidad);
@@ -174,6 +118,9 @@ public class PartidaService {
         if (!jugador.isActivo()) {
             throw new RuntimeException("Jugador no está activo");
         }
+
+        partida.getJugadoresQueHanActuado().add(idJugador);
+
 
         Map<String, Integer> apuestas = partida.getApuestasActuales();
         int apuestaActualJugador = apuestas.getOrDefault(jugador.getId(), 0);
@@ -218,6 +165,9 @@ public class PartidaService {
             throw new RuntimeException("Jugador no está activo");
         }
 
+        partida.getJugadoresQueHanActuado().add(idJugador);
+
+
         Map<String, Integer> apuestas = partida.getApuestasActuales();
         int apuestaJugador = apuestas.getOrDefault(jugador.getId(), 0);
 
@@ -248,6 +198,9 @@ public class PartidaService {
         if (!jugador.isActivo()) {
             throw new RuntimeException("Jugador ya está fuera de la mano");
         }
+
+        partida.getJugadoresQueHanActuado().add(idJugador);
+
 
         Map<String, Integer> apuestas = partida.getApuestasActuales();
         int apuestaAcumulada = apuestas.getOrDefault(jugador.getId(), 0);
@@ -283,6 +236,9 @@ public class PartidaService {
             throw new RuntimeException("El jugador no tiene fichas suficientes");
         }
 
+        partida.getJugadoresQueHanActuado().add(idJugador);
+
+
         jugador.setFichas(0);
         jugador.setAllIn(true);
         partida.setBote(partida.getBote() + fichas);
@@ -298,6 +254,7 @@ public class PartidaService {
     public boolean rondaDeApuestasFinalizada(Partida partida) {
         Map<String, Integer> apuestas = partida.getApuestasActuales();
         int apuestaMaxima = 0;
+        int jugadoresActivos = 0;
 
         for (Integer cantidad : apuestas.values()) {
             if (cantidad > apuestaMaxima) {
@@ -305,27 +262,20 @@ public class PartidaService {
             }
         }
 
-        int jugadoresActivos = 0;
-
         for (Jugador jugador : partida.getJugadores()) {
-            if (jugador.isActivo()) {
-                if (!jugador.isAllIn()) {
-                    jugadoresActivos++;
+            if (jugador.isActivo() && !jugador.isAllIn()) {
+                jugadoresActivos++;
 
-                    int apuestaJugador = 0;
-                    if (apuestas.containsKey(jugador.getId())) {
-                        apuestaJugador = apuestas.get(jugador.getId());
-                    }
-
-                    if (apuestaJugador < apuestaMaxima) {
-                        return false;
-                    }
+                int apuestaJugador = apuestas.getOrDefault(jugador.getId(), 0);
+                if (apuestaJugador < apuestaMaxima) {
+                    return false;
                 }
             }
         }
 
-        return true;
+        return partida.getJugadoresQueHanActuado().size() >= jugadoresActivos;
     }
+
 
     @Transactional
     public Partida avanzarFaseSiCorresponde(String idPartida) {
@@ -358,9 +308,10 @@ public class PartidaService {
             Carta river = baraja.repartirCarta();
             partida.getCartasComunitarias().add(river);
         } else if (nuevaFase == FaseJuego.SHOWDOWN) {
-            // En esta fase se debería calcular el ganador y repartir el bote (aún por implementar)
+
         }
 
+        partida.getJugadoresQueHanActuado().clear();
         partidaRepository.save(partida);
         return partida;
     }
@@ -381,16 +332,25 @@ public class PartidaService {
             throw new RuntimeException("La partida ha terminado. No hay suficientes jugadores con fichas.");
         }
 
-        GameSessionManager.iniciarNuevaMano(partida);
+        // Reiniciar baraja y fase
+        GameSessionManager.reiniciarFaseYBaraja(idPartida);
+        Baraja baraja = GameSessionManager.getBaraja(idPartida);
 
+        // Limpiar estado de la partida
         partida.getApuestasActuales().clear();
         partida.getCartasComunitarias().clear();
         partida.setBote(0);
+        partida.getJugadoresQueHanActuado().clear();
 
+        // Repartir nuevas cartas
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.getFichas() > 0) {
                 jugador.setActivo(true);
                 jugador.setAllIn(false);
+                List<Carta> nuevasCartas = new ArrayList<>();
+                nuevasCartas.add(baraja.repartirCarta());
+                nuevasCartas.add(baraja.repartirCarta());
+                jugador.setMano(new Mano(nuevasCartas));
             } else {
                 jugador.setActivo(false);
                 jugador.setAllIn(false);
@@ -401,6 +361,7 @@ public class PartidaService {
         partidaRepository.save(partida);
         return partida;
     }
+
 
     @Transactional
     public Partida unirseAPartida(String idPartida, String idUsuario) {
@@ -427,6 +388,62 @@ public class PartidaService {
         partidaRepository.save(partida);
         return partida;
     }
+
+    @Transactional
+    public Partida resolverShowdown(String idPartida) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        if (GameSessionManager.getFase(idPartida) != FaseJuego.SHOWDOWN) {
+            throw new RuntimeException("No se puede resolver el showdown si no se está en la fase SHOWDOWN");
+        }
+
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
+        if (ganador == null) {
+            throw new RuntimeException("No se pudo determinar un ganador");
+        }
+
+        ganador.setFichas(ganador.getFichas() + partida.getBote());
+        partida.setIdGanador(ganador.getId());
+        partida.setBote(0);
+
+        partidaRepository.save(partida);
+
+        return iniciarNuevaMano(idPartida);
+    }
+
+
+    public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {
+        Partida partida = partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+
+        List<EstadoJugadorDTO> estadoJugadores = new ArrayList<>();
+
+        for (Jugador jugador : partida.getJugadores()) {
+            List<Carta> mano = null;
+            if (jugador.getMano() != null) {
+                mano = jugador.getMano().getCartas();
+            }
+
+            EstadoJugadorDTO estadoJugador = new EstadoJugadorDTO(
+                    jugador.getUsuario().getNombre(),
+                    jugador.getFichas(),
+                    jugador.isActivo(),
+                    jugador.isAllIn(),
+                    mano
+            );
+
+            estadoJugadores.add(estadoJugador);
+        }
+
+        return new EstadoPartidaDTO(
+                GameSessionManager.getFase(idPartida),
+                partida.getBote(),
+                partida.getCartasComunitarias(),
+                estadoJugadores
+        );
+    }
+
 
 
 

@@ -1,6 +1,8 @@
 package edu.badpals.pokerweb.controller;
 
+import edu.badpals.pokerweb.dtos.AccionJugadorDTO;
 import edu.badpals.pokerweb.dtos.CrearPartidaDTO;
+import edu.badpals.pokerweb.dtos.EstadoPartidaDTO;
 import edu.badpals.pokerweb.model.Carta;
 import edu.badpals.pokerweb.model.Partida;
 import edu.badpals.pokerweb.service.PartidaService;
@@ -28,33 +30,24 @@ public class PartidaController {
         }
     }
 
-    @PostMapping("/{id}/flop")
-    public ResponseEntity<List<Carta>> repartirFlop(@PathVariable String id) {
+    @GetMapping("/{idPartida}/estado")
+    public ResponseEntity<EstadoPartidaDTO> obtenerEstadoPartida(@PathVariable String idPartida) {
         try {
-            List<Carta> flop = partidaService.repartirFlop(id);
-            return ResponseEntity.ok(flop);
+            EstadoPartidaDTO estado = partidaService.obtenerEstadoPartida(idPartida);
+            return ResponseEntity.ok(estado);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    @PostMapping("/{idPartida}/turn")
-    public ResponseEntity<Carta> repartirTurn(@PathVariable String idPartida) {
-        try {
-            Carta turn = partidaService.repartirTurn(idPartida);
-            return ResponseEntity.ok(turn);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
 
-    @PostMapping("/{idPartida}/river")
-    public ResponseEntity<Carta> repartirRiver(@PathVariable String idPartida) {
+    @PostMapping("/{idPartida}/showdown")
+    public ResponseEntity<Partida> resolverShowdown(@PathVariable String idPartida) {
         try {
-            Carta river = partidaService.repartirRiver(idPartida);
-            return ResponseEntity.ok(river);
+            Partida resultado = partidaService.resolverShowdown(idPartida);
+            return ResponseEntity.ok(resultado);
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(null);
         }
     }
 
@@ -88,6 +81,63 @@ public class PartidaController {
         }
     }
 
+    @PostMapping("/{idPartida}/apostar")
+    public ResponseEntity<Partida> apostar(
+            @PathVariable String idPartida,
+            @RequestBody AccionJugadorDTO accion) {
+        try {
+            Partida partida = partidaService.apostar(idPartida, accion.getIdJugador(), accion.getCantidad());
+            return ResponseEntity.ok(partida);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
+    @PostMapping("/{idPartida}/igualar")
+    public ResponseEntity<Partida> igualar(
+            @PathVariable String idPartida,
+            @RequestBody AccionJugadorDTO accion) {
+        try {
+            Partida partida = partidaService.igualar(idPartida, accion.getIdJugador());
+            return ResponseEntity.ok(partida);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 
+    @PostMapping("/{idPartida}/pasar")
+    public ResponseEntity<Partida> pasar(
+            @PathVariable String idPartida,
+            @RequestBody AccionJugadorDTO accion) {
+        try {
+            Partida partida = partidaService.pasar(idPartida, accion.getIdJugador());
+            return ResponseEntity.ok(partida);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/{idPartida}/retirarse")
+    public ResponseEntity<Partida> retirarse(
+            @PathVariable String idPartida,
+            @RequestBody AccionJugadorDTO accion) {
+        try {
+            Partida partida = partidaService.retirarse(idPartida, accion.getIdJugador());
+            return ResponseEntity.ok(partida);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PostMapping("/{idPartida}/allin")
+    public ResponseEntity<Partida> allIn(
+            @PathVariable String idPartida,
+            @RequestBody AccionJugadorDTO accion) {
+        try {
+            Partida partida = partidaService.allIn(idPartida, accion.getIdJugador());
+            return ResponseEntity.ok(partida);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }
