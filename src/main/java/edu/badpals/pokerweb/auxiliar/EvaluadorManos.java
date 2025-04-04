@@ -37,16 +37,20 @@ public class EvaluadorManos {
                 int puntuacion = evaluarMano(todasCartas);
                 int cartaAlta = obtenerCartaMasAlta(todasCartas);
 
-                if (puntuacion > mejorPuntuacion || (puntuacion == mejorPuntuacion && cartaAlta > mejorCartaAlta)) {
+                if (ganador == null ||
+                        puntuacion > mejorPuntuacion ||
+                        (puntuacion == mejorPuntuacion && cartaAlta > mejorCartaAlta)) {
+
+                    ganador = jugador;
                     mejorPuntuacion = puntuacion;
                     mejorCartaAlta = cartaAlta;
-                    ganador = jugador;
                 }
             }
         }
 
         return ganador;
     }
+
 
     public static int evaluarMano(List<Carta> cartas) {
         if (tienePoker(cartas)) {

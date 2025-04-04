@@ -4,6 +4,7 @@ import edu.badpals.pokerweb.auxiliar.EvaluadorManos;
 import edu.badpals.pokerweb.auxiliar.GameSessionManager;
 import edu.badpals.pokerweb.dtos.EstadoJugadorDTO;
 import edu.badpals.pokerweb.dtos.EstadoPartidaDTO;
+import edu.badpals.pokerweb.dtos.ResultadoShowdownDTO;
 import edu.badpals.pokerweb.model.*;
 import edu.badpals.pokerweb.model.enums.FaseJuego;
 import edu.badpals.pokerweb.repository.MesaRepository;
@@ -390,7 +391,7 @@ public class PartidaService {
     }
 
     @Transactional
-    public Partida resolverShowdown(String idPartida) {
+    public ResultadoShowdownDTO resolverShowdown(String idPartida) {
         Partida partida = partidaRepository.findById(idPartida)
                 .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
 
@@ -403,14 +404,25 @@ public class PartidaService {
             throw new RuntimeException("No se pudo determinar un ganador");
         }
 
-        ganador.setFichas(ganador.getFichas() + partida.getBote());
+        int boteGanado = partida.getBote();
+        ganador.setFichas(ganador.getFichas() + boteGanado);
         partida.setIdGanador(ganador.getId());
         partida.setBote(0);
 
         partidaRepository.save(partida);
 
-        return iniciarNuevaMano(idPartida);
+        ResultadoShowdownDTO resultado = new ResultadoShowdownDTO(
+                ganador.getUsuario().getNombre(),
+                ganador.getMano().getCartas(),
+                ganador.getFichas(),
+                boteGanado,
+                new ArrayList<>(partida.getCartasComunitarias())
+        );
+
+        iniciarNuevaMano(idPartida);
+        return resultado;
     }
+
 
 
     public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {

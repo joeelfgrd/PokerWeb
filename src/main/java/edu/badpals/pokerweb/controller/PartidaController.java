@@ -3,6 +3,7 @@ package edu.badpals.pokerweb.controller;
 import edu.badpals.pokerweb.dtos.AccionJugadorDTO;
 import edu.badpals.pokerweb.dtos.CrearPartidaDTO;
 import edu.badpals.pokerweb.dtos.EstadoPartidaDTO;
+import edu.badpals.pokerweb.dtos.ResultadoShowdownDTO;
 import edu.badpals.pokerweb.model.Carta;
 import edu.badpals.pokerweb.model.Partida;
 import edu.badpals.pokerweb.service.PartidaService;
@@ -42,14 +43,15 @@ public class PartidaController {
 
 
     @PostMapping("/{idPartida}/showdown")
-    public ResponseEntity<Partida> resolverShowdown(@PathVariable String idPartida) {
+    public ResponseEntity<ResultadoShowdownDTO> resolverShowdown(@PathVariable String idPartida) {
         try {
-            Partida resultado = partidaService.resolverShowdown(idPartida);
+            ResultadoShowdownDTO resultado = partidaService.resolverShowdown(idPartida);
             return ResponseEntity.ok(resultado);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(null);
         }
     }
+
 
     @PostMapping("/{idPartida}/mano-privada")
     public ResponseEntity<Map<String, List<Carta>>> repartirManosPrivadas(@PathVariable String idPartida) {
