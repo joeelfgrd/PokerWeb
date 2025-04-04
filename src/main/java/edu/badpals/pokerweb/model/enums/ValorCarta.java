@@ -30,4 +30,8 @@ public enum ValorCarta {
     public int getNumero() {
         return numero;
     }
+
+    public String getValorString() {
+        return valor;
+    }
 }

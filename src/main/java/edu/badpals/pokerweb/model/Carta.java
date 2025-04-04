@@ -33,6 +33,11 @@ public class Carta {
     public String getValorString() {
         return valor.getValor();
     }
+    @Override
+    public String toString() {
+        return valor.getValorString() + " de " + palo.name();
+    }
+
 }
 
 

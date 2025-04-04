@@ -1,6 +1,7 @@
 package edu.badpals.pokerweb.service;
 
 import edu.badpals.pokerweb.auxiliar.EvaluadorManos;
+import edu.badpals.pokerweb.auxiliar.EvaluadorManosV2;
 import edu.badpals.pokerweb.auxiliar.GameSessionManager;
 import edu.badpals.pokerweb.dtos.EstadoJugadorDTO;
 import edu.badpals.pokerweb.dtos.EstadoPartidaDTO;
@@ -399,7 +400,8 @@ public class PartidaService {
             throw new RuntimeException("No se puede resolver el showdown si no se está en la fase SHOWDOWN");
         }
 
-        Jugador ganador = EvaluadorManos.determinarGanador(partida);
+        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+
         if (ganador == null) {
             throw new RuntimeException("No se pudo determinar un ganador");
         }
