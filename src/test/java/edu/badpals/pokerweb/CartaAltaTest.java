@@ -1,9 +1,12 @@
 package edu.badpals.pokerweb;
 
-import edu.badpals.pokerweb.auxiliar.EvaluadorManos;
-import edu.badpals.pokerweb.model.*;
-import edu.badpals.pokerweb.model.enums.Palo;
-import edu.badpals.pokerweb.model.enums.ValorCarta;
+import edu.badpals.pokerweb.domain.services.EvaluadorManos;
+import edu.badpals.pokerweb.domain.model.Carta;
+import edu.badpals.pokerweb.domain.model.Jugador;
+import edu.badpals.pokerweb.domain.model.Mano;
+import edu.badpals.pokerweb.domain.model.Partida;
+import edu.badpals.pokerweb.domain.enums.Palo;
+import edu.badpals.pokerweb.domain.enums.ValorCarta;
 import org.junit.jupiter.api.RepeatedTest;
 
 import java.util.List;

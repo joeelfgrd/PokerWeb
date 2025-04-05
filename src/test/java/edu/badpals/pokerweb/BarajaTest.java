@@ -1,7 +1,7 @@
 package edu.badpals.pokerweb;
 
-import edu.badpals.pokerweb.model.Baraja;
-import edu.badpals.pokerweb.model.Carta;
+import edu.badpals.pokerweb.domain.model.Baraja;
+import edu.badpals.pokerweb.domain.model.Carta;
 import org.junit.jupiter.api.RepeatedTest;
 
 import java.util.HashSet;
