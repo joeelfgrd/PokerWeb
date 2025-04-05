@@ -1,6 +1,6 @@
 package edu.badpals.pokerweb;
 
-import edu.badpals.pokerweb.auxiliar.EvaluadorManosV2;
+import edu.badpals.pokerweb.auxiliar.EvaluadorManos;
 import edu.badpals.pokerweb.auxiliar.ManoEvaluada;
 import edu.badpals.pokerweb.model.*;
 import edu.badpals.pokerweb.model.enums.Palo;
@@ -44,7 +44,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.CORAZONES, ValorCarta.NUEVE));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -68,7 +68,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.CORAZONES, ValorCarta.DOS));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -93,7 +93,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.CORAZONES, ValorCarta.DOS));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -117,7 +117,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.CORAZONES, ValorCarta.DOS));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -141,7 +141,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.CORAZONES, ValorCarta.DOS));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -165,7 +165,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.DIAMANTES, ValorCarta.CUATRO));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -189,7 +189,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.CORAZONES, ValorCarta.K));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -214,7 +214,7 @@ public class EmpateKickersTest {
                 new Carta(Palo.CORAZONES, ValorCarta.SIETE));
 
         Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        Jugador ganador = EvaluadorManos.determinarGanador(partida);
         assertEquals(j1, ganador);
     }
 
@@ -248,10 +248,10 @@ public class EmpateKickersTest {
             partida.setJugadores(jugadores);
             partida.setCartasComunitarias(comunitarias);
 
-            Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+            Jugador ganador = EvaluadorManos.determinarGanador(partida);
             assertNotNull(ganador);
 
-            ManoEvaluada manoGanadora = EvaluadorManosV2.evaluar(new ArrayList<>() {{
+            ManoEvaluada manoGanadora = EvaluadorManos.evaluar(new ArrayList<>() {{
                 addAll(ganador.getMano().getCartas());
                 addAll(partida.getCartasComunitarias());
             }});

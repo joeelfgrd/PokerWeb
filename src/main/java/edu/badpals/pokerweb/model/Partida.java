@@ -35,6 +35,10 @@ public class Partida {
     @ElementCollection
     private Set<String> jugadoresQueHanActuado = new HashSet<>();
 
+    @Transient
+    private List<SidePot> sidePots = new ArrayList<>();
+
+
 
     public Partida() {
         this.id = UUID.randomUUID().toString();
@@ -128,5 +132,9 @@ public class Partida {
 
     public void setJugadoresQueHanActuado(Set<String> jugadoresQueHanActuado) {
         this.jugadoresQueHanActuado = jugadoresQueHanActuado;
+    }
+
+    public List<SidePot> getSidePots() {
+        return sidePots;
     }
 }

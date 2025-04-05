@@ -1,8 +1,9 @@
 package edu.badpals.pokerweb.service;
 
 import edu.badpals.pokerweb.auxiliar.EvaluadorManos;
-import edu.badpals.pokerweb.auxiliar.EvaluadorManosV2;
 import edu.badpals.pokerweb.auxiliar.GameSessionManager;
+import edu.badpals.pokerweb.auxiliar.GestorApuestas;
+import edu.badpals.pokerweb.auxiliar.ManoEvaluada;
 import edu.badpals.pokerweb.dtos.EstadoJugadorDTO;
 import edu.badpals.pokerweb.dtos.EstadoPartidaDTO;
 import edu.badpals.pokerweb.dtos.ResultadoShowdownDTO;
@@ -20,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static edu.badpals.pokerweb.auxiliar.EvaluadorManos.determinarGanadoresEntre;
+
 @Service
 public class PartidaService {
 
@@ -31,6 +34,9 @@ public class PartidaService {
 
     @Autowired
     private MesaRepository mesaRepository;
+
+    @Autowired
+    private GestorApuestas gestorApuestas;
 
 
     public Partida crearPartida(String idUsuario) {
@@ -81,177 +87,55 @@ public class PartidaService {
 
     @Transactional
     public Partida apostar(String idPartida, String idJugador, int cantidad) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        Jugador jugador = partida.getJugadores().stream()
-                .filter(j -> j.getId().equals(idJugador))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
-
-        if (!jugador.isActivo() || jugador.getFichas() < cantidad) {
-            throw new RuntimeException("El jugador no puede apostar esa cantidad");
-        }
-
-        partida.getJugadoresQueHanActuado().add(idJugador);
-
-
-        jugador.setFichas(jugador.getFichas() - cantidad);
-
-        partida.setBote(partida.getBote() + cantidad);
-
-        Map<String, Integer> apuestas = partida.getApuestasActuales();
-        apuestas.put(jugador.getId(), apuestas.getOrDefault(jugador.getId(), 0) + cantidad);
-
+        Partida partida = obtenerPartida(idPartida);
+        gestorApuestas.apostar(partida, idJugador, cantidad);
         partidaRepository.save(partida);
         return avanzarFaseSiCorresponde(idPartida);
     }
+
 
     @Transactional
     public Partida igualar(String idPartida, String idJugador) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        Jugador jugador = partida.getJugadores().stream()
-                .filter(j -> j.getId().equals(idJugador))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
-
-        if (!jugador.isActivo()) {
-            throw new RuntimeException("Jugador no está activo");
-        }
-
-        partida.getJugadoresQueHanActuado().add(idJugador);
-
-
-        Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int apuestaActualJugador = apuestas.getOrDefault(jugador.getId(), 0);
-
-        int apuestaMaxima = 0;
-        for (Integer apuesta : apuestas.values()) {
-            if (apuesta > apuestaMaxima) {
-                apuestaMaxima = apuesta;
-            }
-        }
-
-        int diferencia = apuestaMaxima - apuestaActualJugador;
-
-        if (diferencia <= 0) {
-            return partida;
-        }
-
-        if (jugador.getFichas() < diferencia) {
-            throw new RuntimeException("No tienes suficientes fichas para igualar. Debes hacer all-in");
-        }
-
-        jugador.setFichas(jugador.getFichas() - diferencia);
-        partida.setBote(partida.getBote() + diferencia);
-        apuestas.put(jugador.getId(), apuestaActualJugador + diferencia);
-
+        Partida partida = obtenerPartida(idPartida);
+        gestorApuestas.igualar(partida, idJugador);
         partidaRepository.save(partida);
         return avanzarFaseSiCorresponde(idPartida);
     }
+
 
 
     @Transactional
     public Partida pasar(String idPartida, String idJugador) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        Jugador jugador = partida.getJugadores().stream()
-                .filter(j -> j.getId().equals(idJugador))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
-
-        if (!jugador.isActivo()) {
-            throw new RuntimeException("Jugador no está activo");
-        }
-
-        partida.getJugadoresQueHanActuado().add(idJugador);
-
-
-        Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int apuestaJugador = apuestas.getOrDefault(jugador.getId(), 0);
-
-        int apuestaMaxima = 0;
-        for (Integer apuesta : apuestas.values()) {
-            if (apuesta > apuestaMaxima) {
-                apuestaMaxima = apuesta;
-            }
-        }
-
-        if (apuestaJugador < apuestaMaxima) {
-            throw new RuntimeException("No puedes pasar, hay una apuesta que debes igualar.");
-        }
-
-        return avanzarFaseSiCorresponde(idPartida);
-    }
-
-    @Transactional
-    public Partida retirarse(String idPartida, String idJugador) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        Jugador jugador = partida.getJugadores().stream()
-                .filter(j -> j.getId().equals(idJugador))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
-
-        if (!jugador.isActivo()) {
-            throw new RuntimeException("Jugador ya está fuera de la mano");
-        }
-
-        partida.getJugadoresQueHanActuado().add(idJugador);
-
-
-        Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int apuestaAcumulada = apuestas.getOrDefault(jugador.getId(), 0);
-
-        partida.setBote(partida.getBote() + apuestaAcumulada);
-
-        apuestas.remove(jugador.getId());
-
-        jugador.setActivo(false);
-        jugador.setMano(null);
-
+        Partida partida = obtenerPartida(idPartida);
+        gestorApuestas.pasar(partida, idJugador);
         partidaRepository.save(partida);
         return avanzarFaseSiCorresponde(idPartida);
     }
+
+
+    @Transactional
+    public Partida retirarse(String idPartida, String idJugador) {
+        Partida partida = obtenerPartida(idPartida);
+        gestorApuestas.retirarse(partida, idJugador);
+        partidaRepository.save(partida);
+        return avanzarFaseSiCorresponde(idPartida);
+    }
+
 
 
     @Transactional
     public Partida allIn(String idPartida, String idJugador) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-
-        Jugador jugador = partida.getJugadores().stream()
-                .filter(j -> j.getId().equals(idJugador))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
-
-        if (!jugador.isActivo()) {
-            throw new RuntimeException("Jugador no está activo");
-        }
-
-        int fichas = jugador.getFichas();
-        if (fichas <= 0) {
-            throw new RuntimeException("El jugador no tiene fichas suficientes");
-        }
-
-        partida.getJugadoresQueHanActuado().add(idJugador);
-
-
-        jugador.setFichas(0);
-        jugador.setAllIn(true);
-        partida.setBote(partida.getBote() + fichas);
-
-        Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int apuestaActual = apuestas.getOrDefault(jugador.getId(), 0);
-        apuestas.put(jugador.getId(), apuestaActual + fichas);
-
+        Partida partida = obtenerPartida(idPartida);
+        gestorApuestas.allIn(partida, idJugador);
         partidaRepository.save(partida);
         return avanzarFaseSiCorresponde(idPartida);
     }
+
+    private Partida obtenerPartida(String idPartida) {
+        return partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+    }
+
 
     public boolean rondaDeApuestasFinalizada(Partida partida) {
         Map<String, Integer> apuestas = partida.getApuestasActuales();
@@ -400,30 +284,142 @@ public class PartidaService {
             throw new RuntimeException("No se puede resolver el showdown si no se está en la fase SHOWDOWN");
         }
 
-        Jugador ganador = EvaluadorManosV2.determinarGanador(partida);
+        // Filtramos solo jugadores activos
+        List<Jugador> jugadoresActivos = partida.getJugadores().stream()
+                .filter(Jugador::isActivo)
+                .toList();
 
-        if (ganador == null) {
+        List<SidePot> sidePots = partida.getSidePots();
+        int totalGanado = 0;
+        Jugador ganadorPrincipal = null;
+        ManoEvaluada mejorManoPrincipal = null;
+
+        // Repartimos cada side pot entre los ganadores correspondientes
+        for (SidePot sidePot : sidePots) {
+            // Candidatos = jugadores activos que participaron
+            List<Jugador> candidatos = new ArrayList<>();
+            for (Jugador j : jugadoresActivos) {
+                if (sidePot.getParticipantes().contains(j.getId())) {
+                    candidatos.add(j);
+                }
+            }
+
+            // Podríamos tener 1, varios o ningún ganador
+            List<Jugador> ganadoresSidePot = determinarGanadoresEntre(candidatos, partida.getCartasComunitarias());
+            if (!ganadoresSidePot.isEmpty()) {
+                int cantPorGanador = sidePot.getCantidad() / ganadoresSidePot.size();
+                int resto = sidePot.getCantidad() % ganadoresSidePot.size();
+
+                // Sumamos a cada ganador su parte
+                for (int i = 0; i < ganadoresSidePot.size(); i++) {
+                    Jugador g = ganadoresSidePot.get(i);
+                    int monto = cantPorGanador;
+                    // Si hay un sobrante, se lo damos al primer ganador, por ejemplo.
+                    if (i == 0 && resto > 0) {
+                        monto += resto;
+                    }
+                    g.setFichas(g.getFichas() + monto);
+                    totalGanado += monto;
+
+                    // Verificamos si tiene mejor mano principal
+                    List<Carta> cartas = new ArrayList<>(g.getMano().getCartas());
+                    cartas.addAll(partida.getCartasComunitarias());
+                    ManoEvaluada manoEval = EvaluadorManos.evaluar(cartas);
+
+                    if (mejorManoPrincipal == null || manoEval.compareTo(mejorManoPrincipal) > 0) {
+                        mejorManoPrincipal = manoEval;
+                        ganadorPrincipal = g;
+                    }
+                }
+            }
+        }
+
+        // Repartimos el bote principal (partida.getBote()) entre los ganadores de la partida
+        int botePrincipal = partida.getBote();
+        if (botePrincipal > 0) {
+            List<Jugador> ganadoresMain = determinarGanadoresEntre(jugadoresActivos, partida.getCartasComunitarias());
+            if (!ganadoresMain.isEmpty()) {
+                int cantPorGanador = botePrincipal / ganadoresMain.size();
+                int resto = botePrincipal % ganadoresMain.size();
+
+                for (int i = 0; i < ganadoresMain.size(); i++) {
+                    Jugador g = ganadoresMain.get(i);
+                    int monto = cantPorGanador;
+                    // Si hay un sobrante, se lo sumamos al primero (política simple)
+                    if (i == 0 && resto > 0) {
+                        monto += resto;
+                    }
+                    g.setFichas(g.getFichas() + monto);
+                    totalGanado += monto;
+
+                    List<Carta> cartas = new ArrayList<>(g.getMano().getCartas());
+                    cartas.addAll(partida.getCartasComunitarias());
+                    ManoEvaluada manoEval = EvaluadorManos.evaluar(cartas);
+
+                    if (mejorManoPrincipal == null || manoEval.compareTo(mejorManoPrincipal) > 0) {
+                        mejorManoPrincipal = manoEval;
+                        ganadorPrincipal = g;
+                    }
+                }
+
+                // Si solo hay un ganador, lo establecemos como idGanador
+                if (ganadoresMain.size() == 1) {
+                    partida.setIdGanador(ganadoresMain.get(0).getId());
+                } else {
+                    // Podrías dejar en null para representar un empate,
+                    // o seleccionar uno arbitrariamente.
+                    partida.setIdGanador(null);
+                }
+            }
+        } else if (ganadorPrincipal != null) {
+            // Si no había bote principal pero sí side pots,
+            // y tuvimos un "ganador principal"
+            partida.setIdGanador(ganadorPrincipal.getId());
+        } else {
             throw new RuntimeException("No se pudo determinar un ganador");
         }
 
-        int boteGanado = partida.getBote();
-        ganador.setFichas(ganador.getFichas() + boteGanado);
-        partida.setIdGanador(ganador.getId());
+        // Dejamos el bote y sidepots en cero para la siguiente mano
         partida.setBote(0);
-
+        partida.getSidePots().clear();
         partidaRepository.save(partida);
 
+        // Finalmente, creamos el DTO con la info del "ganador principal".
+        // Para la UI, muchas veces interesa mostrar el que tenía la mejor mano,
+        // aun si hubo empates.
+        String nombreGanador = (ganadorPrincipal != null)
+                ? ganadorPrincipal.getUsuario().getNombre()
+                : "Empate";
+
+        List<Carta> cartasGanador = (ganadorPrincipal != null && ganadorPrincipal.getMano() != null)
+                ? ganadorPrincipal.getMano().getCartas()
+                : new ArrayList<>();
+
+        int fichasGanador = (ganadorPrincipal != null) ? ganadorPrincipal.getFichas() : 0;
+
         ResultadoShowdownDTO resultado = new ResultadoShowdownDTO(
-                ganador.getUsuario().getNombre(),
-                ganador.getMano().getCartas(),
-                ganador.getFichas(),
-                boteGanado,
+                nombreGanador,
+                cartasGanador,
+                fichasGanador,
+                totalGanado,
                 new ArrayList<>(partida.getCartasComunitarias())
         );
 
+        // Iniciar la siguiente mano
         iniciarNuevaMano(idPartida);
         return resultado;
     }
+
+    public static List<Jugador> determinarGanadores(Partida partida) {
+        List<Jugador> jugadoresActivos = new ArrayList<>();
+        for (Jugador j : partida.getJugadores()) {
+            if (j.isActivo() && j.getMano() != null) {
+                jugadoresActivos.add(j);
+            }
+        }
+        return determinarGanadoresEntre(jugadoresActivos, partida.getCartasComunitarias());
+    }
+
 
 
 
