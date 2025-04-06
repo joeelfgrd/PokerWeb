@@ -1,7 +1,8 @@
 package edu.badpals.pokerweb.application.dtos;
 
 import java.time.LocalDate;
-/*Creo una dto que es la que se va a quedar en el movil porque no me interesa que se quede la contraseña en el movil */
+
+
 public class UsuarioLogueadoDTO {
     private String id;
     private String nombreCompleto;

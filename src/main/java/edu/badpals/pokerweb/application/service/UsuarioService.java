@@ -3,6 +3,10 @@ package edu.badpals.pokerweb.application.service;
 import edu.badpals.pokerweb.application.dtos.RegistroUsuarioDTO;
 import edu.badpals.pokerweb.application.dtos.LoginDTO;
 import edu.badpals.pokerweb.application.dtos.UsuarioLogueadoDTO;
+import edu.badpals.pokerweb.domain.exceptions.PasswordIncorrectaException;
+import edu.badpals.pokerweb.domain.exceptions.UsuarioBloqueadoException;
+import edu.badpals.pokerweb.domain.exceptions.UsuarioNoEncontradoException;
+import edu.badpals.pokerweb.domain.exceptions.UsuarioYaExisteException;
 import edu.badpals.pokerweb.domain.model.Usuario;
 import edu.badpals.pokerweb.infraestructure.persistence.repository.UsuarioRepository;
 import jakarta.transaction.Transactional;
@@ -33,7 +37,7 @@ public class UsuarioService {
     public UsuarioLogueadoDTO registrar(RegistroUsuarioDTO dto) {
         Optional<Usuario> usuarioExistente = usuarioRepository.findByEmail(dto.getEmail());
         if (usuarioExistente.isPresent()) {
-            throw new RuntimeException("El email ya está registrado.");
+            throw new UsuarioYaExisteException(dto.getEmail());
         }
 
         Usuario usuario = new Usuario(
@@ -49,29 +53,26 @@ public class UsuarioService {
     }
 
     @Transactional
-    public LoginStatus login(LoginDTO logindto) {
-        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(logindto.getEmail());
+    public UsuarioLogueadoDTO login(LoginDTO logindto) {
+        Usuario usuario = usuarioRepository.findByEmail(logindto.getEmail())
+                .orElseThrow(() -> new UsuarioNoEncontradoException(logindto.getEmail()));
 
-        if (usuarioOpt.isEmpty()) {
-            return LoginStatus.USER_NOT_FOUND;
-        }
-
-        Usuario usuario = usuarioOpt.get();
         if (!passwordEncoder.matches(logindto.getPassword(), usuario.getPasswordHash())) {
-            return LoginStatus.ERROR_PASSWORD;
+            throw new PasswordIncorrectaException();
         }
 
         if (!usuario.isActivo()) {
-            return LoginStatus.USER_BLOCKED;
+            throw new UsuarioBloqueadoException(usuario.getEmail());
         }
 
-        return LoginStatus.LOGIN_OK;
+        return modelMapper.map(usuario, UsuarioLogueadoDTO.class);
     }
+
 
     @Transactional
     public Usuario getUsuarioByEmail(String email) {
         return usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new UsuarioNoEncontradoException(email));
     }
 
     public UsuarioLogueadoDTO getUsuarioResponseByEmail(String email) {

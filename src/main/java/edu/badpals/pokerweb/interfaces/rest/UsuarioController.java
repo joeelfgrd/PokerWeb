@@ -16,6 +16,12 @@ public class UsuarioController {
     @Autowired
     private UsuarioService usuarioService;
 
+    @GetMapping("/usuario")
+    public ResponseEntity<UsuarioLogueadoDTO> getUsuario(@RequestParam String email) {
+        UsuarioLogueadoDTO usuario = usuarioService.getUsuarioResponseByEmail(email);
+        return ResponseEntity.ok(usuario);
+    }
+
     @PostMapping("/registro")
     public ResponseEntity<UsuarioLogueadoDTO> registrar(@RequestBody RegistroUsuarioDTO dto) {
         try {
@@ -28,19 +34,8 @@ public class UsuarioController {
 
     @PostMapping("/login")
     public ResponseEntity<UsuarioLogueadoDTO> login(@RequestBody LoginDTO dto) {
-        LoginStatus status = usuarioService.login(dto);
-
-        if (status == LoginStatus.LOGIN_OK) {
-            UsuarioLogueadoDTO usuario = usuarioService.getUsuarioResponseByEmail(dto.getEmail());
-            return ResponseEntity.ok(usuario);
-        } else if (status == LoginStatus.USER_NOT_FOUND) {
-            return ResponseEntity.status(404).body(null);
-        } else if (status == LoginStatus.ERROR_PASSWORD) {
-            return ResponseEntity.status(401).body(null);
-        } else if (status == LoginStatus.USER_BLOCKED) {
-            return ResponseEntity.status(403).body(null);
-        } else {
-            return ResponseEntity.status(500).build();
-        }
+        UsuarioLogueadoDTO usuario = usuarioService.login(dto);
+        return ResponseEntity.ok(usuario);
     }
+
 }

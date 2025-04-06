@@ -4,9 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
 import java.time.LocalDate;
-/*CREO UNA CLASE PARA GESTIONAR EL POST QUE SE HACE CUANDO SE REGISTRA*/
+
 public class RegistroUsuarioDTO {
     @NotBlank(message = "El nombre completo es obligatorio")
     private String nombreCompleto;
