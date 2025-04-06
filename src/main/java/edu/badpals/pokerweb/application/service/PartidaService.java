@@ -164,7 +164,6 @@ public class PartidaService {
         return partida.getJugadoresQueHanActuado().size() >= jugadoresActivos;
     }
 
-
     @Transactional
     public Partida avanzarFaseSiCorresponde(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
