@@ -1,15 +1,12 @@
 package edu.badpals.pokerweb.application.service;
 
 import edu.badpals.pokerweb.domain.exceptions.*;
-import edu.badpals.pokerweb.domain.services.EvaluadorManos;
 import edu.badpals.pokerweb.domain.services.GameSessionManager;
 import edu.badpals.pokerweb.domain.services.GestorApuestas;
-import edu.badpals.pokerweb.domain.services.ManoEvaluada;
 import edu.badpals.pokerweb.application.dtos.EstadoJugadorDTO;
 import edu.badpals.pokerweb.application.dtos.EstadoPartidaDTO;
 import edu.badpals.pokerweb.application.dtos.ResultadoShowdownDTO;
 import edu.badpals.pokerweb.domain.model.*;
-import edu.badpals.pokerweb.domain.enums.FaseJuego;
 import edu.badpals.pokerweb.infraestructure.persistence.repository.MesaRepository;
 import edu.badpals.pokerweb.infraestructure.persistence.repository.PartidaRepository;
 import edu.badpals.pokerweb.infraestructure.persistence.repository.UsuarioRepository;
@@ -18,11 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static edu.badpals.pokerweb.domain.services.EvaluadorManos.determinarGanadoresEntre;
 
 @Service
 public class PartidaService {
@@ -40,7 +34,7 @@ public class PartidaService {
     private GestorApuestas gestorApuestas;
 
     @Autowired
-    private GestorShowdownService gestorShowdownService;
+    private GestorShowdown gestorShowdown;
 
     @Autowired
     private GestorPartidas gestorPartidas;
@@ -174,7 +168,7 @@ public class PartidaService {
 
     @Transactional
     public ResultadoShowdownDTO resolverShowdown(String idPartida) {
-        return gestorShowdownService.resolver(idPartida);
+        return gestorShowdown.resolver(idPartida);
     }
 
     public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {

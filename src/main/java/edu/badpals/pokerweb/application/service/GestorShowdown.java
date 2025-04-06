@@ -17,7 +17,7 @@ import java.util.*;
 import static edu.badpals.pokerweb.domain.services.EvaluadorManos.determinarGanadoresEntre;
 
 @Service
-public class GestorShowdownService {
+public class GestorShowdown {
 
     @Autowired
     private PartidaRepository partidaRepository;
