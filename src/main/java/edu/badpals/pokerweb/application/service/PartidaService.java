@@ -39,6 +39,19 @@ public class PartidaService {
     @Autowired
     private GestorApuestas gestorApuestas;
 
+    @Autowired
+    private GestorShowdownService gestorShowdownService;
+
+    @Autowired
+    private GestorPartidas gestorPartidas;
+
+    @Autowired
+    private GestorManos gestorManos;
+
+    @Autowired
+    private GestorFases gestorFases;
+
+
     /**
      * Crea una nueva partida y la asocia a un usuario.
      *
@@ -46,22 +59,17 @@ public class PartidaService {
      * @return La partida creada.
      */
     public Partida crearPartida(String idUsuario) {
-        Usuario usuario = getUsuario(idUsuario);
-
-        Mesa mesa = new Mesa();
-        mesaRepository.save(mesa);
-
-        Partida partida = new Partida();
-        partida.setMesa(mesa);
-
-        Jugador jugador = new Jugador(usuario, mesa, partida);
-        partida.setJugadores(List.of(jugador));
-
-        partidaRepository.save(partida);
-        GameSessionManager.iniciarPartida(partida);
-        return partida;
+        return gestorPartidas.crearPartida(idUsuario);
     }
 
+    public Partida unirseAPartida(String idPartida, String idUsuario) {
+        return gestorPartidas.unirseAPartida(idPartida, idUsuario);
+    }
+
+    @Transactional
+    public Partida iniciarNuevaMano(String idPartida) {
+        return gestorManos.iniciarNuevaMano(idPartida);
+    }
 
     /**
      * Reparte cartas a los jugadores de la partida.
@@ -71,32 +79,7 @@ public class PartidaService {
      */
     @Transactional
     public Map<String, List<Carta>> repartirManosPrivadas(String idPartida) {
-        Partida partida = obtenerPartida(idPartida);
-
-        Baraja baraja = GameSessionManager.getBaraja(idPartida);
-        if (baraja == null) {
-            throw new PartidaNoActivaException(idPartida);
-        }
-
-        if (partida.getJugadores() == null || partida.getJugadores().isEmpty()) {
-            throw new PartidaSinJugadoresException(idPartida);
-        }
-
-        Map<String, List<Carta>> manosRepartidas = new HashMap<>();
-
-        for (Jugador jugador : partida.getJugadores()) {
-            List<Carta> manoJugador = new ArrayList<>();
-            for (int i = 0; i < 2; i++) {
-                manoJugador.add(baraja.repartirCarta());
-            }
-
-            Mano mano = new Mano(manoJugador);
-            jugador.setMano(mano);
-            manosRepartidas.put(jugador.getId(), manoJugador);
-        }
-
-        partidaRepository.save(partida);
-        return manosRepartidas;
+        return gestorManos.repartirManosPrivadas(idPartida);
     }
 
     /**
@@ -178,37 +161,6 @@ public class PartidaService {
     }
 
 
-
-    /**
-     * Verifica si la ronda de apuestas ha finalizado.
-     *
-     * @param partida La partida actual.
-     * @return true si la ronda de apuestas ha finalizado, false en caso contrario.
-     */
-    public boolean rondaDeApuestasFinalizada(Partida partida) {
-        Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int apuestaMaxima = 0;
-        int jugadoresActivos = 0;
-
-        for (Integer cantidad : apuestas.values()) {
-            if (cantidad > apuestaMaxima) {
-                apuestaMaxima = cantidad;
-            }
-        }
-
-        for (Jugador jugador : partida.getJugadores()) {
-            if (jugador.isActivo() && !jugador.isAllIn()) {
-                jugadoresActivos++;
-
-                int apuestaJugador = apuestas.getOrDefault(jugador.getId(), 0);
-                if (apuestaJugador < apuestaMaxima) {
-                    return false;
-                }
-            }
-        }
-
-        return partida.getJugadoresQueHanActuado().size() >= jugadoresActivos;
-    }
     /**
      * Avanza la fase de la partida si corresponde.
      *
@@ -217,258 +169,13 @@ public class PartidaService {
      */
     @Transactional
     public Partida avanzarFaseSiCorresponde(String idPartida) {
-        Partida partida = obtenerPartida(idPartida);
-
-        if (!rondaDeApuestasFinalizada(partida)) {
-            return partida;
-        }
-
-        partida.getApuestasActuales().clear();
-
-        GameSessionManager.avanzarFase(idPartida);
-
-        FaseJuego nuevaFase = GameSessionManager.getFase(idPartida);
-        Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
-        if (nuevaFase == FaseJuego.FLOP) {
-            baraja.repartirCarta();
-            for (int i = 0; i < 3; i++) {
-                Carta carta = baraja.repartirCarta();
-                partida.getCartasComunitarias().add(carta);
-            }
-        } else if (nuevaFase == FaseJuego.TURN) {
-            baraja.repartirCarta();
-            Carta turn = baraja.repartirCarta();
-            partida.getCartasComunitarias().add(turn);
-        } else if (nuevaFase == FaseJuego.RIVER) {
-            baraja.repartirCarta();
-            Carta river = baraja.repartirCarta();
-            partida.getCartasComunitarias().add(river);
-        } else if (nuevaFase == FaseJuego.SHOWDOWN) {
-
-        }
-
-        partida.getJugadoresQueHanActuado().clear();
-        partidaRepository.save(partida);
-        return partida;
-    }
-
-    @Transactional
-    public Partida iniciarNuevaMano(String idPartida) {
-        Partida partida = obtenerPartida(idPartida);
-
-        int jugadoresConFichas = 0;
-        for (Jugador jugador : partida.getJugadores()) {
-            if (jugador.getFichas() > 0) {
-                jugadoresConFichas++;
-            }
-        }
-
-        if (jugadoresConFichas < 2) {
-            throw new PartidaFinalizadaException(idPartida);
-        }
-
-        // Reiniciar baraja y fase
-        GameSessionManager.reiniciarFaseYBaraja(idPartida);
-        Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
-        // Limpiar estado de la partida
-        partida.getApuestasActuales().clear();
-        partida.getCartasComunitarias().clear();
-        partida.setBote(0);
-        partida.getJugadoresQueHanActuado().clear();
-
-        // Repartir nuevas cartas
-        for (Jugador jugador : partida.getJugadores()) {
-            if (jugador.getFichas() > 0) {
-                jugador.setActivo(true);
-                jugador.setAllIn(false);
-                List<Carta> nuevasCartas = new ArrayList<>();
-                nuevasCartas.add(baraja.repartirCarta());
-                nuevasCartas.add(baraja.repartirCarta());
-                jugador.setMano(new Mano(nuevasCartas));
-            } else {
-                jugador.setActivo(false);
-                jugador.setAllIn(false);
-                jugador.setMano(null);
-            }
-        }
-
-        partidaRepository.save(partida);
-        return partida;
-    }
-
-
-    @Transactional
-    public Partida unirseAPartida(String idPartida, String idUsuario) {
-        Partida partida = obtenerPartida(idPartida);
-
-        Usuario usuario = getUsuario(idUsuario);
-
-        for (Jugador jugador : partida.getJugadores()) {
-            if (jugador.getUsuario().getId().equals(idUsuario)) {
-                throw new JugadorYaUnidoException(idUsuario, idPartida);
-            }
-        }
-
-        if (partida.getJugadores().size() >= 10) {
-            throw new MaximoJugadoresException(idPartida);
-        }
-
-        Mesa mesa = partida.getMesa();
-        Jugador nuevoJugador = new Jugador(usuario, mesa, partida);
-        partida.getJugadores().add(nuevoJugador);
-
-        partidaRepository.save(partida);
-        return partida;
+        return gestorFases.avanzarFaseSiCorresponde(idPartida);
     }
 
     @Transactional
     public ResultadoShowdownDTO resolverShowdown(String idPartida) {
-        Partida partida = obtenerPartida(idPartida);
-
-        if (GameSessionManager.getFase(idPartida) != FaseJuego.SHOWDOWN) {
-            throw new FaseIncorrectaException(GameSessionManager.getFase(idPartida).name());
-        }
-
-        // Filtramos solo jugadores activos
-        List<Jugador> jugadoresActivos = partida.getJugadores().stream()
-                .filter(Jugador::isActivo)
-                .toList();
-
-        List<SidePot> sidePots = partida.getSidePots();
-        int totalGanado = 0;
-        Jugador ganadorPrincipal = null;
-        ManoEvaluada mejorManoPrincipal = null;
-
-        // Repartimos cada side pot entre los ganadores correspondientes
-        for (SidePot sidePot : sidePots) {
-            // Candidatos = jugadores activos que participaron
-            List<Jugador> candidatos = new ArrayList<>();
-            for (Jugador j : jugadoresActivos) {
-                if (sidePot.getParticipantes().contains(j.getId())) {
-                    candidatos.add(j);
-                }
-            }
-
-            // Podríamos tener 1, varios o ningún ganador
-            List<Jugador> ganadoresSidePot = determinarGanadoresEntre(candidatos, partida.getCartasComunitarias());
-            if (!ganadoresSidePot.isEmpty()) {
-                int cantPorGanador = sidePot.getCantidad() / ganadoresSidePot.size();
-                int resto = sidePot.getCantidad() % ganadoresSidePot.size();
-
-                // Sumamos a cada ganador su parte
-                for (int i = 0; i < ganadoresSidePot.size(); i++) {
-                    Jugador g = ganadoresSidePot.get(i);
-                    int monto = cantPorGanador;
-                    // Si hay un sobrante, se lo damos al primer ganador, por ejemplo.
-                    if (i == 0 && resto > 0) {
-                        monto += resto;
-                    }
-                    g.setFichas(g.getFichas() + monto);
-                    totalGanado += monto;
-
-                    // Verificamos si tiene mejor mano principal
-                    List<Carta> cartas = new ArrayList<>(g.getMano().getCartas());
-                    cartas.addAll(partida.getCartasComunitarias());
-                    ManoEvaluada manoEval = EvaluadorManos.evaluar(cartas);
-
-                    if (mejorManoPrincipal == null || manoEval.compareTo(mejorManoPrincipal) > 0) {
-                        mejorManoPrincipal = manoEval;
-                        ganadorPrincipal = g;
-                    }
-                }
-            }
-        }
-
-        // Repartimos el bote principal (partida.getBote()) entre los ganadores de la partida
-        int botePrincipal = partida.getBote();
-        if (botePrincipal > 0) {
-            List<Jugador> ganadoresMain = determinarGanadoresEntre(jugadoresActivos, partida.getCartasComunitarias());
-            if (!ganadoresMain.isEmpty()) {
-                int cantPorGanador = botePrincipal / ganadoresMain.size();
-                int resto = botePrincipal % ganadoresMain.size();
-
-                for (int i = 0; i < ganadoresMain.size(); i++) {
-                    Jugador g = ganadoresMain.get(i);
-                    int monto = cantPorGanador;
-                    // Si hay un sobrante, se lo sumamos al primero (política simple)
-                    if (i == 0 && resto > 0) {
-                        monto += resto;
-                    }
-                    g.setFichas(g.getFichas() + monto);
-                    totalGanado += monto;
-
-                    List<Carta> cartas = new ArrayList<>(g.getMano().getCartas());
-                    cartas.addAll(partida.getCartasComunitarias());
-                    ManoEvaluada manoEval = EvaluadorManos.evaluar(cartas);
-
-                    if (mejorManoPrincipal == null || manoEval.compareTo(mejorManoPrincipal) > 0) {
-                        mejorManoPrincipal = manoEval;
-                        ganadorPrincipal = g;
-                    }
-                }
-
-                // Si solo hay un ganador, lo establecemos como idGanador
-                if (ganadoresMain.size() == 1) {
-                    partida.setIdGanador(ganadoresMain.get(0).getId());
-                } else {
-                    // Podrías dejar en null para representar un empate,
-                    // o seleccionar uno arbitrariamente.
-                    partida.setIdGanador(null);
-                }
-            }
-        } else if (ganadorPrincipal != null) {
-            // Si no había bote principal pero sí side pots,
-            // y tuvimos un "ganador principal"
-            partida.setIdGanador(ganadorPrincipal.getId());
-        } else {
-            throw new GanadorIndeterminadoException(idPartida);
-        }
-
-        // Dejamos el bote y sidepots en cero para la siguiente mano
-        partida.setBote(0);
-        partida.getSidePots().clear();
-        partidaRepository.save(partida);
-
-        // Finalmente, creamos el DTO con la info del "ganador principal".
-        // Para la UI, muchas veces interesa mostrar el que tenía la mejor mano,
-        // aun si hubo empates.
-        String nombreGanador = (ganadorPrincipal != null)
-                ? ganadorPrincipal.getUsuario().getNombre()
-                : "Empate";
-
-        List<Carta> cartasGanador = (ganadorPrincipal != null && ganadorPrincipal.getMano() != null)
-                ? ganadorPrincipal.getMano().getCartas()
-                : new ArrayList<>();
-
-        int fichasGanador = (ganadorPrincipal != null) ? ganadorPrincipal.getFichas() : 0;
-
-        ResultadoShowdownDTO resultado = new ResultadoShowdownDTO(
-                nombreGanador,
-                cartasGanador,
-                fichasGanador,
-                totalGanado,
-                new ArrayList<>(partida.getCartasComunitarias())
-        );
-
-        // Iniciar la siguiente mano
-        iniciarNuevaMano(idPartida);
-        return resultado;
+        return gestorShowdownService.resolver(idPartida);
     }
-
-    public static List<Jugador> determinarGanadores(Partida partida) {
-        List<Jugador> jugadoresActivos = new ArrayList<>();
-        for (Jugador j : partida.getJugadores()) {
-            if (j.isActivo() && j.getMano() != null) {
-                jugadoresActivos.add(j);
-            }
-        }
-        return determinarGanadoresEntre(jugadoresActivos, partida.getCartasComunitarias());
-    }
-
-
-
 
     public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
@@ -505,9 +212,4 @@ public class PartidaService {
                 .orElseThrow(() -> new PartidaNoEncontradaException(idPartida));
     }
 
-    private Usuario getUsuario(String idUsuario) {
-        Usuario usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new UsuarioNoEncontradoException(idUsuario));
-        return usuario;
-    }
 }

@@ -73,8 +73,6 @@ public class EvaluadorManos {
         return ganadores;
     }
 
-
-
     public static ManoEvaluada evaluar(List<Carta> cartas) {
         if (tienePoker(cartas)) {
             int valor = obtenerValorPorRepeticion(cartas, 4);
