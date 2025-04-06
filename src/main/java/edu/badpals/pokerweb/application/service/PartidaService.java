@@ -278,7 +278,7 @@ public class PartidaService {
         Partida partida = obtenerPartida(idPartida);
 
         if (GameSessionManager.getFase(idPartida) != FaseJuego.SHOWDOWN) {
-            throw new RuntimeException("No se puede resolver el showdown si no se está en la fase SHOWDOWN");
+            throw new FaseIncorrectaException(GameSessionManager.getFase(idPartida).name());
         }
 
         // Filtramos solo jugadores activos
@@ -373,7 +373,7 @@ public class PartidaService {
             // y tuvimos un "ganador principal"
             partida.setIdGanador(ganadorPrincipal.getId());
         } else {
-            throw new RuntimeException("No se pudo determinar un ganador");
+            throw new GanadorIndeterminadoException(idPartida);
         }
 
         // Dejamos el bote y sidepots en cero para la siguiente mano
