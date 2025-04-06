@@ -39,7 +39,12 @@ public class PartidaService {
     @Autowired
     private GestorApuestas gestorApuestas;
 
-
+    /**
+     * Crea una nueva partida y la asocia a un usuario.
+     *
+     * @param idUsuario ID del usuario que crea la partida.
+     * @return La partida creada.
+     */
     public Partida crearPartida(String idUsuario) {
         Usuario usuario = getUsuario(idUsuario);
 
@@ -58,7 +63,12 @@ public class PartidaService {
     }
 
 
-
+    /**
+     * Reparte cartas a los jugadores de la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @return Un mapa con el ID del jugador como clave y su mano como valor.
+     */
     @Transactional
     public Map<String, List<Carta>> repartirManosPrivadas(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
@@ -89,7 +99,14 @@ public class PartidaService {
         return manosRepartidas;
     }
 
-
+    /**
+     * Realiza una apuesta en la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @param idJugador ID del jugador que realiza la apuesta.
+     * @param cantidad  Cantidad a apostar.
+     * @return La partida actualizada.
+     */
     @Transactional
     public Partida apostar(String idPartida, String idJugador, int cantidad) {
         Partida partida = obtenerPartida(idPartida);
@@ -98,7 +115,13 @@ public class PartidaService {
         return avanzarFaseSiCorresponde(idPartida);
     }
 
-
+    /**
+     * Realiza una apuesta de igualar en la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @param idJugador ID del jugador que iguala.
+     * @return La partida actualizada.
+     */
     @Transactional
     public Partida igualar(String idPartida, String idJugador) {
         Partida partida = obtenerPartida(idPartida);
@@ -108,7 +131,13 @@ public class PartidaService {
     }
 
 
-
+    /**
+     * Realiza una acción de pasar en la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @param idJugador ID del jugador que pasa.
+     * @return La partida actualizada.
+     */
     @Transactional
     public Partida pasar(String idPartida, String idJugador) {
         Partida partida = obtenerPartida(idPartida);
@@ -117,7 +146,13 @@ public class PartidaService {
         return avanzarFaseSiCorresponde(idPartida);
     }
 
-
+    /**
+     * Realiza una acción de retirarse en la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @param idJugador ID del jugador que se retira.
+     * @return La partida actualizada.
+     */
     @Transactional
     public Partida retirarse(String idPartida, String idJugador) {
         Partida partida = obtenerPartida(idPartida);
@@ -127,7 +162,13 @@ public class PartidaService {
     }
 
 
-
+    /**
+     * Realiza una acción de all-in en la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @param idJugador ID del jugador que hace all-in.
+     * @return La partida actualizada.
+     */
     @Transactional
     public Partida allIn(String idPartida, String idJugador) {
         Partida partida = obtenerPartida(idPartida);
@@ -138,7 +179,12 @@ public class PartidaService {
 
 
 
-
+    /**
+     * Verifica si la ronda de apuestas ha finalizado.
+     *
+     * @param partida La partida actual.
+     * @return true si la ronda de apuestas ha finalizado, false en caso contrario.
+     */
     public boolean rondaDeApuestasFinalizada(Partida partida) {
         Map<String, Integer> apuestas = partida.getApuestasActuales();
         int apuestaMaxima = 0;
@@ -163,7 +209,12 @@ public class PartidaService {
 
         return partida.getJugadoresQueHanActuado().size() >= jugadoresActivos;
     }
-
+    /**
+     * Avanza la fase de la partida si corresponde.
+     *
+     * @param idPartida ID de la partida.
+     * @return La partida actualizada.
+     */
     @Transactional
     public Partida avanzarFaseSiCorresponde(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
