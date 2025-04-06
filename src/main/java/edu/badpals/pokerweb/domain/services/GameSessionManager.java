@@ -1,6 +1,7 @@
 package edu.badpals.pokerweb.domain.services;
 
 import edu.badpals.pokerweb.domain.model.Baraja;
+import edu.badpals.pokerweb.domain.model.Jugador;
 import edu.badpals.pokerweb.domain.model.Partida;
 import edu.badpals.pokerweb.domain.enums.FaseJuego;
 
@@ -36,14 +37,19 @@ public class GameSessionManager {
         return turnoJugadoresPartida.getOrDefault(partidaId, 0);
     }
 
-    public static void avanzarTurno(String partidaId, int totalJugadores) {
+    public static void avanzarTurno(String partidaId, List<Jugador> jugadores) {
+        List<Jugador> activos = jugadores.stream()
+                .filter(Jugador::isActivo)
+                .toList();
+
+        if (activos.isEmpty()) return;
+
         int turno = turnoJugadoresPartida.getOrDefault(partidaId, 0);
-        turno = turno + 1;
-        if (turno >= totalJugadores) {
-            turno = 0;
-        }
+        turno = (turno + 1) % activos.size();
         turnoJugadoresPartida.put(partidaId, turno);
     }
+
+
 
     public static FaseJuego getFase(String partidaId) {
         return fasePartida.getOrDefault(partidaId, FaseJuego.PREFLOP);
@@ -60,4 +66,20 @@ public class GameSessionManager {
         fasePartida.put(partidaId, FaseJuego.PREFLOP);
         turnoJugadoresPartida.put(partidaId, 0);
     }
+
+    public static String getJugadorEnTurno(String partidaId, List<Jugador> jugadores) {
+        int turno = turnoJugadoresPartida.getOrDefault(partidaId, 0);
+
+        List<Jugador> activos = jugadores.stream()
+                .filter(Jugador::isActivo)
+                .toList();
+
+        if (activos.isEmpty()) {
+            throw new IllegalStateException("No hay jugadores activos en la partida");
+        }
+
+        return activos.get(turno % activos.size()).getId();
+    }
+
+
 }
