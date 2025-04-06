@@ -1,9 +1,6 @@
 package edu.badpals.pokerweb.interfaces.handler;
 
-import edu.badpals.pokerweb.domain.exceptions.PasswordIncorrectaException;
-import edu.badpals.pokerweb.domain.exceptions.UsuarioBloqueadoException;
-import edu.badpals.pokerweb.domain.exceptions.UsuarioNoEncontradoException;
-import edu.badpals.pokerweb.domain.exceptions.UsuarioYaExisteException;
+import edu.badpals.pokerweb.domain.exceptions.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -50,6 +47,22 @@ public class ValidationExceptionHandler {
     public ResponseEntity<Map<String, String>> handleUsuarioBloqueado(UsuarioBloqueadoException ex) {
         return ResponseEntity.status(403).body(Map.of("error", ex.getMessage()));
     }
+
+    @ExceptionHandler(PartidaNoEncontradaException.class)
+    public ResponseEntity<Map<String, String>> handlePartidaNoEncontrada(PartidaNoEncontradaException ex) {
+        return ResponseEntity.status(404).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(PartidaNoActivaException.class)
+    public ResponseEntity<Map<String, String>> handlePartidaNoActiva(PartidaNoActivaException ex) {
+        return ResponseEntity.status(404).body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(PartidaSinJugadoresException.class)
+    public ResponseEntity<Map<String, String>> handlePartidaSinJugadores(PartidaSinJugadoresException ex) {
+        return ResponseEntity.status(404).body(Map.of("error", ex.getMessage()));
+    }
+
 
 }
 

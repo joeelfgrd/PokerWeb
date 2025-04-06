@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb.application.service;
 
+import edu.badpals.pokerweb.domain.exceptions.*;
 import edu.badpals.pokerweb.domain.services.EvaluadorManos;
 import edu.badpals.pokerweb.domain.services.GameSessionManager;
 import edu.badpals.pokerweb.domain.services.GestorApuestas;
@@ -40,8 +41,7 @@ public class PartidaService {
 
 
     public Partida crearPartida(String idUsuario) {
-        Usuario usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        Usuario usuario = getUsuario(idUsuario);
 
         Mesa mesa = new Mesa();
         mesaRepository.save(mesa);
@@ -57,15 +57,19 @@ public class PartidaService {
         return partida;
     }
 
+
+
     @Transactional
     public Map<String, List<Carta>> repartirManosPrivadas(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        Partida partida = obtenerPartida(idPartida);
 
         Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
         if (baraja == null) {
-            throw new RuntimeException("La partida no está activa o no se ha inicializado la baraja");
+            throw new PartidaNoActivaException(idPartida);
+        }
+
+        if (partida.getJugadores() == null || partida.getJugadores().isEmpty()) {
+            throw new PartidaSinJugadoresException(idPartida);
         }
 
         Map<String, List<Carta>> manosRepartidas = new HashMap<>();
@@ -84,6 +88,7 @@ public class PartidaService {
         partidaRepository.save(partida);
         return manosRepartidas;
     }
+
 
     @Transactional
     public Partida apostar(String idPartida, String idJugador, int cantidad) {
@@ -131,10 +136,7 @@ public class PartidaService {
         return avanzarFaseSiCorresponde(idPartida);
     }
 
-    private Partida obtenerPartida(String idPartida) {
-        return partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
-    }
+
 
 
     public boolean rondaDeApuestasFinalizada(Partida partida) {
@@ -165,8 +167,7 @@ public class PartidaService {
 
     @Transactional
     public Partida avanzarFaseSiCorresponde(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        Partida partida = obtenerPartida(idPartida);
 
         if (!rondaDeApuestasFinalizada(partida)) {
             return partida;
@@ -204,8 +205,7 @@ public class PartidaService {
 
     @Transactional
     public Partida iniciarNuevaMano(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        Partida partida = obtenerPartida(idPartida);
 
         int jugadoresConFichas = 0;
         for (Jugador jugador : partida.getJugadores()) {
@@ -215,7 +215,7 @@ public class PartidaService {
         }
 
         if (jugadoresConFichas < 2) {
-            throw new RuntimeException("La partida ha terminado. No hay suficientes jugadores con fichas.");
+            throw new PartidaFinalizadaException(idPartida);
         }
 
         // Reiniciar baraja y fase
@@ -251,20 +251,18 @@ public class PartidaService {
 
     @Transactional
     public Partida unirseAPartida(String idPartida, String idUsuario) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        Partida partida = obtenerPartida(idPartida);
 
-        Usuario usuario = usuarioRepository.findById(idUsuario)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        Usuario usuario = getUsuario(idUsuario);
 
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.getUsuario().getId().equals(idUsuario)) {
-                throw new RuntimeException("El usuario ya está unido a esta partida");
+                throw new JugadorYaUnidoException(idUsuario, idPartida);
             }
         }
 
         if (partida.getJugadores().size() >= 10) {
-            throw new RuntimeException("La partida ya tiene el máximo de 10 jugadores");
+            throw new MaximoJugadoresException(idPartida);
         }
 
         Mesa mesa = partida.getMesa();
@@ -277,8 +275,7 @@ public class PartidaService {
 
     @Transactional
     public ResultadoShowdownDTO resolverShowdown(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        Partida partida = obtenerPartida(idPartida);
 
         if (GameSessionManager.getFase(idPartida) != FaseJuego.SHOWDOWN) {
             throw new RuntimeException("No se puede resolver el showdown si no se está en la fase SHOWDOWN");
@@ -424,8 +421,7 @@ public class PartidaService {
 
 
     public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {
-        Partida partida = partidaRepository.findById(idPartida)
-                .orElseThrow(() -> new RuntimeException("Partida no encontrada"));
+        Partida partida = obtenerPartida(idPartida);
 
         List<EstadoJugadorDTO> estadoJugadores = new ArrayList<>();
 
@@ -454,7 +450,14 @@ public class PartidaService {
         );
     }
 
+    private Partida obtenerPartida(String idPartida) {
+        return partidaRepository.findById(idPartida)
+                .orElseThrow(() -> new PartidaNoEncontradaException(idPartida));
+    }
 
-
-
+    private Usuario getUsuario(String idUsuario) {
+        Usuario usuario = usuarioRepository.findById(idUsuario)
+                .orElseThrow(() -> new UsuarioNoEncontradoException(idUsuario));
+        return usuario;
+    }
 }
