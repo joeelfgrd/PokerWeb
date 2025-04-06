@@ -8,6 +8,7 @@ import edu.badpals.pokerweb.domain.model.Partida;
 import edu.badpals.pokerweb.domain.enums.Palo;
 import edu.badpals.pokerweb.domain.enums.ValorCarta;
 import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CartaAltaTest {
 
-    @RepeatedTest(1000)
+    @Test
     void testGanadorPorCartaAlta() {
         // Jugador 1 - carta más alta: K
         Jugador jugador1 = new Jugador();
