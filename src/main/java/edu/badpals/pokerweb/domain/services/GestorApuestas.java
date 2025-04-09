@@ -10,7 +10,13 @@ import java.util.*;
 
 @Service
 public class GestorApuestas {
-
+    /**
+     * Realiza una apuesta en la partida.
+     *
+     * @param partida   La partida en la que se realiza la apuesta.
+     * @param idJugador El ID del jugador que realiza la apuesta.
+     * @param cantidad  La cantidad a apostar.
+     */
     public void apostar(Partida partida, String idJugador, int cantidad) {
         validarTurno(partida, idJugador);
         Jugador jugador = getJugadorActivo(partida, idJugador);
@@ -31,7 +37,12 @@ public class GestorApuestas {
 
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-
+    /**
+     * Igualar la apuesta actual.
+     *
+     * @param partida   La partida en la que se iguala la apuesta.
+     * @param idJugador El ID del jugador que iguala.
+     */
     public void igualar(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
         Jugador jugador = getJugadorActivo(partida, idJugador);
@@ -52,7 +63,12 @@ public class GestorApuestas {
 
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-
+    /**
+     * Pasar la acción.
+     *
+     * @param partida   La partida en la que se pasa.
+     * @param idJugador El ID del jugador que pasa.
+     */
     public void pasar(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
         getJugadorActivo(partida, idJugador); // validación
@@ -68,7 +84,12 @@ public class GestorApuestas {
         partida.getJugadoresQueHanActuado().add(idJugador);
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-
+    /**
+     * Retirarse de la partida.
+     *
+     * @param partida   La partida en la que se retira el jugador.
+     * @param idJugador El ID del jugador que se retira.
+     */
     public void retirarse(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
         Jugador jugador = getJugadorActivo(partida, idJugador);
@@ -83,7 +104,12 @@ public class GestorApuestas {
         partida.getJugadoresQueHanActuado().add(idJugador);
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-
+    /**
+     * Realiza una acción de all-in en la partida.
+     *
+     * @param partida   La partida en la que se realiza el all-in.
+     * @param idJugador El ID del jugador que hace all-in.
+     */
     public void allIn(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
         Jugador jugador = getJugadorActivo(partida, idJugador);
@@ -105,14 +131,25 @@ public class GestorApuestas {
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
 
     }
-
+    /**
+     * Valida que el jugador en turno sea el correcto.
+     *
+     * @param partida   La partida en la que se realiza la acción.
+     * @param idJugador El ID del jugador que realiza la acción.
+     */
     private void validarTurno(Partida partida, String idJugador) {
         String idEnTurno = GameSessionManager.getJugadorEnTurno(partida.getId(), partida.getJugadores());
         if (!idEnTurno.equals(idJugador)) {
             throw new TurnoIncorrectoException(idJugador);
         }
     }
-
+    /**
+     * Obtiene el jugador activo en la partida.
+     *
+     * @param partida   La partida en la que se busca el jugador.
+     * @param idJugador El ID del jugador a buscar.
+     * @return El jugador activo.
+     */
     private Jugador getJugadorActivo(Partida partida, String idJugador) {
         return partida.getJugadores().stream()
                 .filter(j -> j.getId().equals(idJugador) && j.isActivo())
@@ -120,7 +157,13 @@ public class GestorApuestas {
                 .orElseThrow(() -> new RuntimeException("Jugador no encontrado o no activo."));
     }
 
-
+    /**
+     * Actualiza los side pots de la partida.
+     *
+     * @param partida    La partida en la que se actualizan los side pots.
+     * @param idJugador  El ID del jugador que realiza la acción.
+     * @param totalApuesta La cantidad total apostada por el jugador.
+     */
     private void actualizarSidePots(Partida partida, String idJugador, int totalApuesta) {
         List<SidePot> sidePots = partida.getSidePots();
 

@@ -166,11 +166,23 @@ public class PartidaService {
         return gestorFases.avanzarFaseSiCorresponde(idPartida);
     }
 
+    /**
+     * Realiza el showdown de la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @return El resultado del showdown.
+     */
     @Transactional
     public ResultadoShowdownDTO resolverShowdown(String idPartida) {
         return gestorShowdown.resolver(idPartida);
     }
 
+    /**
+     * Obtiene el estado de la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @return El estado de la partida.
+     */
     public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
 
@@ -200,7 +212,12 @@ public class PartidaService {
                 estadoJugadores
         );
     }
-
+    /**
+     * Obtiene la partida por su ID.
+     *
+     * @param idPartida ID de la partida.
+     * @return La partida correspondiente.
+     */
     private Partida obtenerPartida(String idPartida) {
         return partidaRepository.findById(idPartida)
                 .orElseThrow(() -> new PartidaNoEncontradaException(idPartida));
