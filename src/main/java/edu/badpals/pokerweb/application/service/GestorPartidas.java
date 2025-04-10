@@ -34,6 +34,9 @@ public class GestorPartidas {
         Partida partida = new Partida();
         partida.setMesa(mesa);
 
+        String codigo = generarCodigoInvitacion();
+        partida.setCodigoInvitacion(codigo);
+
         Jugador jugador = new Jugador(usuario, mesa, partida);
         partida.setJugadores(List.of(jugador));
 
@@ -43,19 +46,21 @@ public class GestorPartidas {
     }
 
     @Transactional
-    public Partida unirseAPartida(String idPartida, String idUsuario) {
-        Partida partida = obtenerPartida(idPartida);
+    public Partida unirseAPartida(String codigoInvitacion, String idUsuario) {
+        Partida partida = partidaRepository.findByCodigoInvitacion(codigoInvitacion)
+                .orElseThrow(() -> new PartidaNoEncontradaException(
+                        "No existe partida con código: " + codigoInvitacion));
 
         Usuario usuario = getUsuario(idUsuario);
 
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.getUsuario().getId().equals(idUsuario)) {
-                throw new JugadorYaUnidoException(idUsuario, idPartida);
+                throw new JugadorYaUnidoException(idUsuario, partida.getId());
             }
         }
 
         if (partida.getJugadores().size() >= 10) {
-            throw new MaximoJugadoresException(idPartida);
+            throw new MaximoJugadoresException(partida.getId());
         }
 
         Mesa mesa = partida.getMesa();
@@ -66,8 +71,6 @@ public class GestorPartidas {
         return partida;
     }
 
-
-
     private Usuario getUsuario(String idUsuario) {
         return usuarioRepository.findById(idUsuario)
                 .orElseThrow(() -> new UsuarioNoEncontradoException(idUsuario));
@@ -76,5 +79,19 @@ public class GestorPartidas {
     private Partida obtenerPartida(String idPartida) {
         return partidaRepository.findById(idPartida)
                 .orElseThrow(() -> new PartidaNoEncontradaException(idPartida));
+    }
+
+    private String generarCodigoInvitacion() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder sb;
+        do {
+            sb = new StringBuilder();
+            for (int i = 0; i < 6; i++) { // 6 o 8
+                sb.append(chars.charAt(new Random().nextInt(chars.length())));
+            }
+            // hasta asegurarte que no duplique
+        } while (partidaRepository.existsByCodigoInvitacion(sb.toString()));
+
+        return sb.toString();
     }
 }

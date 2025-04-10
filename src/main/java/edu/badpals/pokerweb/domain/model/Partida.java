@@ -38,6 +38,9 @@ public class Partida {
     @Transient
     private List<SidePot> sidePots = new ArrayList<>();
 
+    @Column(unique = true)
+    private String codigoInvitacion;
+
 
 
     public Partida() {
@@ -136,5 +139,12 @@ public class Partida {
 
     public List<SidePot> getSidePots() {
         return sidePots;
+    }
+
+    public String getCodigoInvitacion() {
+        return codigoInvitacion;
+    }
+    public void setCodigoInvitacion(String codigoInvitacion) {
+        this.codigoInvitacion = codigoInvitacion;
     }
 }

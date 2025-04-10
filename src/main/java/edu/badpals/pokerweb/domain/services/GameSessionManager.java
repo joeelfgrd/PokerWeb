@@ -38,16 +38,24 @@ public class GameSessionManager {
     }
 
     public static void avanzarTurno(String partidaId, List<Jugador> jugadores) {
-        List<Jugador> activos = jugadores.stream()
-                .filter(Jugador::isActivo)
-                .toList();
-
-        if (activos.isEmpty()) return;
-
+        if (jugadores.isEmpty()) return;
         int turno = turnoJugadoresPartida.getOrDefault(partidaId, 0);
-        turno = (turno + 1) % activos.size();
-        turnoJugadoresPartida.put(partidaId, turno);
+        int total = jugadores.size();
+
+        for (int i = 0; i < total; i++) {
+            turno = (turno + 1) % total;
+            Jugador cand = jugadores.get(turno);
+            if (cand.isActivo() && !cand.isAllIn()) {
+                turnoJugadoresPartida.put(partidaId, turno);
+                return;
+            }
+        }
+        // si todos inactivos o allin no cambia nada
     }
+
+
+
+
 
 
 
@@ -68,18 +76,20 @@ public class GameSessionManager {
     }
 
     public static String getJugadorEnTurno(String partidaId, List<Jugador> jugadores) {
+        if (jugadores.isEmpty()) throw new IllegalStateException("No hay jugadores");
+
         int turno = turnoJugadoresPartida.getOrDefault(partidaId, 0);
+        int total = jugadores.size();
 
-        List<Jugador> activos = jugadores.stream()
-                .filter(Jugador::isActivo)
-                .toList();
-
-        if (activos.isEmpty()) {
-            throw new IllegalStateException("No hay jugadores activos en la partida");
+        for (int i = 0; i < total; i++) {
+            Jugador cand = jugadores.get((turno + i) % total);
+            if (cand.isActivo() && !cand.isAllIn()) {
+                int idxReal = (turno + i) % total;
+                turnoJugadoresPartida.put(partidaId, idxReal);
+                return cand.getId();
+            }
         }
-
-        return activos.get(turno % activos.size()).getId();
+        throw new IllegalStateException("Todos inactivos o all-in");
     }
-
 
 }

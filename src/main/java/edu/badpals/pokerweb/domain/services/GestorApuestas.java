@@ -10,13 +10,7 @@ import java.util.*;
 
 @Service
 public class GestorApuestas {
-    /**
-     * Realiza una apuesta en la partida.
-     *
-     * @param partida   La partida en la que se realiza la apuesta.
-     * @param idJugador El ID del jugador que realiza la apuesta.
-     * @param cantidad  La cantidad a apostar.
-     */
+
     public void apostar(Partida partida, String idJugador, int cantidad) {
         validarTurno(partida, idJugador);
         Jugador jugador = getJugadorActivo(partida, idJugador);
@@ -28,21 +22,22 @@ public class GestorApuestas {
             throw new RuntimeException("El jugador no tiene suficientes fichas para apostar.");
         }
 
+        // Actualizar apuesta y fichas
         jugador.setFichas(jugador.getFichas() - cantidad);
         partida.setBote(partida.getBote() + cantidad);
         partida.getJugadoresQueHanActuado().add(idJugador);
 
         Map<String, Integer> apuestas = partida.getApuestasActuales();
-        apuestas.put(idJugador, apuestas.getOrDefault(idJugador, 0) + cantidad);
+        int anterior = apuestas.getOrDefault(idJugador, 0);
+        apuestas.put(idJugador, anterior + cantidad);
 
+        // Recalcular side pots con la nueva situación
+        recalcularSidePots(partida);
+
+        // Turno
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-    /**
-     * Igualar la apuesta actual.
-     *
-     * @param partida   La partida en la que se iguala la apuesta.
-     * @param idJugador El ID del jugador que iguala.
-     */
+
     public void igualar(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
         Jugador jugador = getJugadorActivo(partida, idJugador);
@@ -56,22 +51,24 @@ public class GestorApuestas {
             throw new RuntimeException("No puedes igualar, debes hacer all-in.");
         }
 
+        // Actualizar
         jugador.setFichas(jugador.getFichas() - diferencia);
         partida.setBote(partida.getBote() + diferencia);
         partida.getJugadoresQueHanActuado().add(idJugador);
-        apuestas.put(idJugador, apuestaJugador + diferencia);
 
+        int nuevaApuesta = apuestaJugador + diferencia;
+        apuestas.put(idJugador, nuevaApuesta);
+
+        // Recalcular side pots
+        recalcularSidePots(partida);
+
+        // Turno
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-    /**
-     * Pasar la acción.
-     *
-     * @param partida   La partida en la que se pasa.
-     * @param idJugador El ID del jugador que pasa.
-     */
+
     public void pasar(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
-        getJugadorActivo(partida, idJugador); // validación
+        getJugadorActivo(partida, idJugador); // Validación
 
         Map<String, Integer> apuestas = partida.getApuestasActuales();
         int maxApuesta = apuestas.values().stream().max(Integer::compareTo).orElse(0);
@@ -82,16 +79,14 @@ public class GestorApuestas {
         }
 
         partida.getJugadoresQueHanActuado().add(idJugador);
+        // Sin cambio en side pots (nadie subió)
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-    /**
-     * Retirarse de la partida.
-     *
-     * @param partida   La partida en la que se retira el jugador.
-     * @param idJugador El ID del jugador que se retira.
-     */
+
     public void retirarse(Partida partida, String idJugador) {
-        validarTurno(partida, idJugador);
+        // Opcional: permitir retirarse fuera de turno
+        // o forzar que sea en turno con validarTurno(partida, idJugador);
+
         Jugador jugador = getJugadorActivo(partida, idJugador);
 
         int apuesta = partida.getApuestasActuales().getOrDefault(idJugador, 0);
@@ -102,14 +97,13 @@ public class GestorApuestas {
         jugador.setMano(null);
 
         partida.getJugadoresQueHanActuado().add(idJugador);
+
+        // Recalcular side pots, por si su retirada reduce participantes
+        recalcularSidePots(partida);
+
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-    /**
-     * Realiza una acción de all-in en la partida.
-     *
-     * @param partida   La partida en la que se realiza el all-in.
-     * @param idJugador El ID del jugador que hace all-in.
-     */
+
     public void allIn(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
         Jugador jugador = getJugadorActivo(partida, idJugador);
@@ -127,29 +121,25 @@ public class GestorApuestas {
         apuestas.put(idJugador, totalApuesta);
         partida.getJugadoresQueHanActuado().add(idJugador);
 
-        actualizarSidePots(partida, idJugador, totalApuesta);
-        GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
+        partida.setBote(partida.getBote() + fichas);
 
+        // Recalcular side pots con la nueva aportación
+        recalcularSidePots(partida);
+
+        GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
-    /**
-     * Valida que el jugador en turno sea el correcto.
-     *
-     * @param partida   La partida en la que se realiza la acción.
-     * @param idJugador El ID del jugador que realiza la acción.
-     */
+
+    // ============================================================
+    // Métodos auxiliares
+    // ============================================================
+
     private void validarTurno(Partida partida, String idJugador) {
         String idEnTurno = GameSessionManager.getJugadorEnTurno(partida.getId(), partida.getJugadores());
         if (!idEnTurno.equals(idJugador)) {
             throw new TurnoIncorrectoException(idJugador);
         }
     }
-    /**
-     * Obtiene el jugador activo en la partida.
-     *
-     * @param partida   La partida en la que se busca el jugador.
-     * @param idJugador El ID del jugador a buscar.
-     * @return El jugador activo.
-     */
+
     private Jugador getJugadorActivo(Partida partida, String idJugador) {
         return partida.getJugadores().stream()
                 .filter(j -> j.getId().equals(idJugador) && j.isActivo())
@@ -158,35 +148,58 @@ public class GestorApuestas {
     }
 
     /**
-     * Actualiza los side pots de la partida.
-     *
-     * @param partida    La partida en la que se actualizan los side pots.
-     * @param idJugador  El ID del jugador que realiza la acción.
-     * @param totalApuesta La cantidad total apostada por el jugador.
+     * Cálculo real de side pots según las aportaciones finales de cada jugador.
+     * Se basa en la lógica típica de "ordenar por aportación ascendente" y crear pots parciales.
      */
-    private void actualizarSidePots(Partida partida, String idJugador, int totalApuesta) {
-        List<SidePot> sidePots = partida.getSidePots();
+    private void recalcularSidePots(Partida partida) {
+        // Limpiar side pots actuales
+        partida.getSidePots().clear();
 
-        if (sidePots.isEmpty()) {
-            SidePot nuevoPot = new SidePot(totalApuesta);
-            nuevoPot.añadirParticipante(idJugador);
-            partida.getSidePots().add(nuevoPot);
-            return;
+        // Tomamos solo jugadores que han apostado algo
+        // y que no se han retirado (aunque allIn cuenta).
+        Map<String, Integer> aportes = new HashMap<>();
+        for (Map.Entry<String, Integer> e : partida.getApuestasActuales().entrySet()) {
+            if (e.getValue() > 0) {
+                aportes.put(e.getKey(), e.getValue());
+            }
         }
+        if (aportes.isEmpty()) return;
 
-        int acumulado = sidePots.stream().mapToInt(SidePot::getCantidad).sum();
-        int diferencia = totalApuesta - acumulado;
+        // Ordenar asc por contribución
+        List<Map.Entry<String, Integer>> ordenados = new ArrayList<>(aportes.entrySet());
+        ordenados.sort(Comparator.comparingInt(Map.Entry::getValue));
 
-        if (diferencia > 0) {
-            SidePot nuevoPot = new SidePot(diferencia);
-            nuevoPot.añadirParticipante(idJugador);
-            partida.getSidePots().add(nuevoPot);
+        int aportePrevio = 0;
+        // Recorremos las distintas contribuciones
+        for (int i = 0; i < ordenados.size(); i++) {
+            int aporteActual = ordenados.get(i).getValue();
+            if (aporteActual <= aportePrevio) continue; // ya cubierto
+
+            // ¿Quién participa en este pot?
+            // Todos los que tienen una aportación >= aporteActual
+            List<String> participantes = new ArrayList<>();
+            for (Map.Entry<String, Integer> x : ordenados) {
+                if (x.getValue() >= aporteActual) {
+                    participantes.add(x.getKey());
+                }
+            }
+
+            // El importe parcial es la diferencia * #participantes
+            int diff = aporteActual - aportePrevio;
+            int potSize = diff * participantes.size();
+
+            SidePot pot = new SidePot(potSize);
+            for (String pid : participantes) {
+                pot.añadirParticipante(pid);
+            }
+            partida.getSidePots().add(pot);
+
+            aportePrevio = aporteActual;
         }
     }
+
     // Solo para testing
     public void avanzarTurnoManual(Partida partida) {
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
-
     }
-
 }

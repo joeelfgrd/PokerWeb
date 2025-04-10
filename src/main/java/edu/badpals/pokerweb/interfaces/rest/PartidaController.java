@@ -46,10 +46,11 @@ public class PartidaController {
         return ResponseEntity.ok(partidaService.iniciarNuevaMano(idPartida));
     }
 
-    @PostMapping("/{idPartida}/unirse")
-    public ResponseEntity<Partida> unirseAPartida(@PathVariable String idPartida, @RequestParam String usuario) {
-        return ResponseEntity.ok(partidaService.unirseAPartida(idPartida, usuario));
+    @PostMapping("/unirse")
+    public ResponseEntity<Partida> unirseAPartidaPorCodigo(@RequestParam String codigo,@RequestParam String usuario) {
+        return ResponseEntity.ok(partidaService.unirseAPartida(codigo, usuario));
     }
+
 
     @PostMapping("/{idPartida}/apostar")
     public ResponseEntity<Partida> apostar(@PathVariable String idPartida, @RequestBody AccionJugadorDTO accion) {

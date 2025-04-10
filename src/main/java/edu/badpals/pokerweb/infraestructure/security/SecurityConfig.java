@@ -23,7 +23,7 @@ public class SecurityConfig {
                                 "/api/partidas/crear",
                                 "/api/partidas/{id}/mano-privada",
                                 "/api/partidas/{id}/nueva-mano",
-                                "/api/partidas/{id}/unirse",
+                                "/api/partidas/unirse",
                                 "/api/partidas/{id}/showdown",
                                 "/api/partidas/{id}/apostar",
                                 "/api/partidas/{id}/igualar",
