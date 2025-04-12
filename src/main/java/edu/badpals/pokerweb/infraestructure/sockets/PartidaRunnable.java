@@ -25,15 +25,11 @@ public class PartidaRunnable implements Runnable {
         this.baraja = new Baraja();
     }
 
-    public String getCodigoInvitacion() {
-        return codigoInvitacion;
-    }
-
     public void agregarJugador(String idUsuario, String nombreJugador, PrintWriter salida) {
         Usuario usuario = new Usuario();
         usuario.setId(idUsuario);
         usuario.setNombreCompleto(nombreJugador);
-        usuario.setDinero(1000); // Puedes ajustar esto si se carga desde DB
+        usuario.setDinero(1000);
 
         Jugador jugador = new Jugador();
         jugador.setId(idUsuario);
@@ -46,7 +42,24 @@ public class PartidaRunnable implements Runnable {
         jugadoresConectados.put(idUsuario, salida);
 
         notificarATodos("🟢 " + nombreJugador + " se ha unido a la partida.");
+        enviarEstadoAParticipante(idUsuario);
     }
+
+    public void enviarEstadoAParticipante(String idJugador) {
+        PrintWriter salida = jugadoresConectados.get(idJugador);
+        if (salida == null) return;
+
+        salida.println("📋 Estado actual de la partida:");
+        salida.println("Jugadores:");
+
+        for (Jugador j : partida.getJugadores()) {
+            salida.println("- " + j.getNombre() + " (" + j.getFichas() + " fichas)");
+        }
+
+        salida.println("Fase actual: " + faseActual);
+        salida.println("Bote actual: " + partida.getBote());
+    }
+
 
     public void recibirComando(String idJugador, String mensaje) {
         notificarATodos("📨 " + idJugador + ": " + mensaje);
@@ -72,5 +85,9 @@ public class PartidaRunnable implements Runnable {
     public void finalizarPartida() {
         enCurso = false;
         notificarATodos("🚪 La partida '" + codigoInvitacion + "' ha finalizado.");
+    }
+
+    public String getCodigoInvitacion() {
+        return codigoInvitacion;
     }
 }
