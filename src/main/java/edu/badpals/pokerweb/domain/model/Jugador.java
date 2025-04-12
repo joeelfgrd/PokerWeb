@@ -79,6 +79,15 @@ public class Jugador {
         return partida;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
+
+
     public void setPartida(Partida partida) {
         this.partida = partida;
     }
@@ -97,5 +106,9 @@ public class Jugador {
 
     public void setAllIn(boolean allIn) {
         this.allIn = allIn;
+    }
+
+    public void setNombre(String nombreJugador) {
+        this.usuario.setNombreCompleto(nombreJugador);
     }
 }

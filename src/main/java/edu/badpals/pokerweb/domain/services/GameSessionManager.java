@@ -50,13 +50,7 @@ public class GameSessionManager {
                 return;
             }
         }
-        // si todos inactivos o allin no cambia nada
     }
-
-
-
-
-
 
 
     public static FaseJuego getFase(String partidaId) {
