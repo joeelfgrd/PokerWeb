@@ -22,21 +22,28 @@ public class GestorApuestas {
             throw new RuntimeException("El jugador no tiene suficientes fichas para apostar.");
         }
 
-        // Actualizar apuesta y fichas
+        Map<String, Integer> apuestas = partida.getApuestasActuales();
+        int maxApuesta = apuestas.values().stream().max(Integer::compareTo).orElse(0);
+        int apuestaJugador = apuestas.getOrDefault(idJugador, 0);
+        int nuevaApuestaTotal = apuestaJugador + cantidad;
+
+        // 🔥 Si simplemente está igualando la apuesta, redirigimos al método igualar
+        if (nuevaApuestaTotal == maxApuesta) {
+            igualar(partida, idJugador);  // Lógica ya existente
+            return;
+        }
+
+        // Si está subiendo
         jugador.setFichas(jugador.getFichas() - cantidad);
         partida.setBote(partida.getBote() + cantidad);
         partida.getJugadoresQueHanActuado().add(idJugador);
 
-        Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int anterior = apuestas.getOrDefault(idJugador, 0);
-        apuestas.put(idJugador, anterior + cantidad);
+        apuestas.put(idJugador, nuevaApuestaTotal);
 
-        // Recalcular side pots con la nueva situación
         recalcularSidePots(partida);
-
-        // Turno
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
+
 
     public void igualar(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
