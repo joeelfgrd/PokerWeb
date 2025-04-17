@@ -10,12 +10,14 @@ public class EstadoPartidaDTO {
     private int bote;
     private List<Carta> cartasComunitarias;
     private List<EstadoJugadorDTO> jugadores;
+    private String idJugadorEnTurno; // 🔥 NUEVO CAMPO
 
-    public EstadoPartidaDTO(FaseJuego fase, int bote, List<Carta> cartasComunitarias, List<EstadoJugadorDTO> jugadores) {
+    public EstadoPartidaDTO(FaseJuego fase, int bote, List<Carta> cartasComunitarias, List<EstadoJugadorDTO> jugadores, String idJugadorEnTurno) {
         this.fase = fase;
         this.bote = bote;
         this.cartasComunitarias = cartasComunitarias;
         this.jugadores = jugadores;
+        this.idJugadorEnTurno = idJugadorEnTurno;
     }
 
     public FaseJuego getFase() {
@@ -48,5 +50,13 @@ public class EstadoPartidaDTO {
 
     public void setJugadores(List<EstadoJugadorDTO> jugadores) {
         this.jugadores = jugadores;
+    }
+
+    public String getIdJugadorEnTurno() {
+        return idJugadorEnTurno;
+    }
+
+    public void setIdJugadorEnTurno(String idJugadorEnTurno) {
+        this.idJugadorEnTurno = idJugadorEnTurno;
     }
 }

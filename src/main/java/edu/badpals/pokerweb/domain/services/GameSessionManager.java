@@ -12,12 +12,25 @@ public class GameSessionManager {
     private static final Map<String, Baraja> barajaPartida = new HashMap<>();
     private static final Map<String, Integer> turnoJugadoresPartida = new HashMap<>();
     private static final Map<String, FaseJuego> fasePartida = new HashMap<>();
+    private static final Map<String, Integer> dealerIndexPorPartida = new HashMap<>();
 
     public static void iniciarPartida(Partida partida) {
         barajaPartida.put(partida.getId(), new Baraja());
         turnoJugadoresPartida.put(partida.getId(), 0);
         fasePartida.put(partida.getId(), FaseJuego.PREFLOP);
+        dealerIndexPorPartida.put(partida.getId(), 0);
     }
+
+    public static void avanzarDealer(String partidaId, List<Jugador> jugadores) {
+        int actual = dealerIndexPorPartida.getOrDefault(partidaId, 0);
+        int siguiente = (actual + 1) % jugadores.size();
+        dealerIndexPorPartida.put(partidaId, siguiente);
+    }
+
+    public static int getDealerIndex(String partidaId) {
+        return dealerIndexPorPartida.getOrDefault(partidaId, 0);
+    }
+
 
     public static Baraja getBaraja(String partidaId) {
         return barajaPartida.get(partidaId);
@@ -69,11 +82,14 @@ public class GameSessionManager {
         turnoJugadoresPartida.put(partidaId, 0);
     }
 
-    public static void reiniciarFaseYBaraja(String partidaId) {
+    public static void reiniciarFaseYBaraja(String partidaId, List<Jugador> jugadores) {
         barajaPartida.put(partidaId, new Baraja());
         fasePartida.put(partidaId, FaseJuego.PREFLOP);
-        turnoJugadoresPartida.put(partidaId, 0);
+        avanzarDealer(partidaId, jugadores);
+        int nuevoTurno = (getDealerIndex(partidaId) + 1) % jugadores.size();
+        turnoJugadoresPartida.put(partidaId, nuevoTurno);
     }
+
 
     public static String getJugadorEnTurno(String partidaId, List<Jugador> jugadores) {
         if (jugadores.isEmpty()) throw new IllegalStateException("No hay jugadores");
@@ -90,6 +106,16 @@ public class GameSessionManager {
             }
         }
         throw new IllegalStateException("Todos inactivos o all-in");
+    }
+
+    public static void forzarTurnoPorJugador(String partidaId, String idJugador, List<Jugador> jugadores) {
+        for (int i = 0; i < jugadores.size(); i++) {
+            if (jugadores.get(i).getId().equals(idJugador)) {
+                turnoJugadoresPartida.put(partidaId, i);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Jugador no encontrado en la lista");
     }
 
 }

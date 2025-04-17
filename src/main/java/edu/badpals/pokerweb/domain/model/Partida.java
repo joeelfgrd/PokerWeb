@@ -18,10 +18,10 @@ public class Partida {
     @JsonBackReference
     private Mesa mesa;
 
-    @OneToMany(mappedBy = "partida", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "partida", cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     private List<Jugador> jugadores;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     private List<Carta> cartasComunitarias = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)

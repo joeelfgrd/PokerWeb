@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb.domain.services;
 
+import edu.badpals.pokerweb.domain.enums.FaseJuego;
 import edu.badpals.pokerweb.domain.exceptions.TurnoIncorrectoException;
 import edu.badpals.pokerweb.domain.model.Jugador;
 import edu.badpals.pokerweb.domain.model.Partida;
@@ -26,14 +27,21 @@ public class GestorApuestas {
         int maxApuesta = apuestas.values().stream().max(Integer::compareTo).orElse(0);
         int apuestaJugador = apuestas.getOrDefault(idJugador, 0);
         int nuevaApuestaTotal = apuestaJugador + cantidad;
+        int diferencia = maxApuesta - apuestaJugador;
 
-        // 🔥 Si simplemente está igualando la apuesta, redirigimos al método igualar
-        if (nuevaApuestaTotal == maxApuesta) {
-            igualar(partida, idJugador);  // Lógica ya existente
+        // 💡 CASO: El jugador está igualando exactamente la apuesta máxima
+        if (nuevaApuestaTotal == maxApuesta && apuestaJugador > 0) {
+            igualar(partida, idJugador);  // Solo si ya tenía parte apostada
             return;
         }
 
-        // Si está subiendo
+
+        // ❌ CASO: El jugador intenta apostar menos de lo necesario
+        if (cantidad < diferencia) {
+            throw new RuntimeException("Debes igualar al menos la apuesta actual para quedarte en la mano.");
+        }
+
+        // ✅ CASO: Subida válida (más de lo necesario)
         jugador.setFichas(jugador.getFichas() - cantidad);
         partida.setBote(partida.getBote() + cantidad);
         partida.getJugadoresQueHanActuado().add(idJugador);
@@ -43,6 +51,7 @@ public class GestorApuestas {
         recalcularSidePots(partida);
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
+
 
 
     public void igualar(Partida partida, String idJugador) {
@@ -58,7 +67,7 @@ public class GestorApuestas {
             throw new RuntimeException("No puedes igualar, debes hacer all-in.");
         }
 
-        // Actualizar
+
         jugador.setFichas(jugador.getFichas() - diferencia);
         partida.setBote(partida.getBote() + diferencia);
         partida.getJugadoresQueHanActuado().add(idJugador);
@@ -66,16 +75,14 @@ public class GestorApuestas {
         int nuevaApuesta = apuestaJugador + diferencia;
         apuestas.put(idJugador, nuevaApuesta);
 
-        // Recalcular side pots
         recalcularSidePots(partida);
 
-        // Turno
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
 
     public void pasar(Partida partida, String idJugador) {
         validarTurno(partida, idJugador);
-        getJugadorActivo(partida, idJugador); // Validación
+        getJugadorActivo(partida, idJugador);
 
         Map<String, Integer> apuestas = partida.getApuestasActuales();
         int maxApuesta = apuestas.values().stream().max(Integer::compareTo).orElse(0);
@@ -86,7 +93,7 @@ public class GestorApuestas {
         }
 
         partida.getJugadoresQueHanActuado().add(idJugador);
-        // Sin cambio en side pots (nadie subió)
+
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());
     }
 
@@ -105,7 +112,6 @@ public class GestorApuestas {
 
         partida.getJugadoresQueHanActuado().add(idJugador);
 
-        // Recalcular side pots, por si su retirada reduce participantes
         recalcularSidePots(partida);
 
         GameSessionManager.avanzarTurno(partida.getId(), partida.getJugadores());

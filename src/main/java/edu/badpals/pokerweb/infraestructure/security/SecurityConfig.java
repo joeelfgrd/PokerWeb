@@ -30,7 +30,8 @@ public class SecurityConfig {
                                 "/api/partidas/{id}/pasar",
                                 "/api/partidas/{id}/retirarse",
                                 "/api/partidas/{id}/allin",
-                                "/api/partidas/{id}/estado"
+                                "/api/partidas/{id}/estado",
+                                "/ws/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

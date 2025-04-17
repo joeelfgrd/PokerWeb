@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb;
 
+import edu.badpals.pokerweb.domain.enums.FaseJuego;
 import edu.badpals.pokerweb.domain.enums.Palo;
 import edu.badpals.pokerweb.domain.enums.ValorCarta;
 import edu.badpals.pokerweb.domain.model.*;
@@ -133,4 +134,50 @@ public class GestorApuestasTest {
         assertTrue(jugador1.isAllIn());
         assertEquals(300, partida.getApuestasActuales().get(jugador1.getId()));
     }
+
+    @Test
+    public void testCiegaPequenaPuedeIgualarConMinima() {
+        jugador1.setFichas(1000);
+        jugador2.setFichas(1000);
+        jugador1.setActivo(true);
+        jugador2.setActivo(true);
+
+        GameSessionManager.iniciarPartida(partida);
+        GameSessionManager.avanzarDealer(partida.getId(), partida.getJugadores());
+        GameSessionManager.reiniciarFaseYBaraja(partida.getId(), partida.getJugadores());
+
+        // Aplicar ciegas manualmente
+        partida.getApuestasActuales().put(jugador1.getId(), 10); // SB
+        partida.getApuestasActuales().put(jugador2.getId(), 20); // BB
+        jugador1.setFichas(990);
+        jugador2.setFichas(980);
+        partida.setBote(30);
+
+        // Simular que BB ya ha actuado
+        partida.getJugadoresQueHanActuado().add(jugador2.getId());
+
+        // Forzar turno a Joel (jugador1)
+        GameSessionManager.forzarTurnoPorJugador(partida.getId(), jugador1.getId(), partida.getJugadores());
+
+        // Joel iguala con la mínima
+        gestorApuestas.igualar(partida, jugador1.getId());
+
+        assertEquals(20, partida.getApuestasActuales().get(jugador1.getId()));
+        assertEquals(40, partida.getBote()); // ✅ Era 30, y Joel añadió 10
+
+        assertTrue(partida.getJugadoresQueHanActuado().contains(jugador1.getId()));
+        assertTrue(partida.getJugadoresQueHanActuado().contains(jugador2.getId()));
+
+        // Avanzar fase manualmente
+        GameSessionManager.avanzarFase(partida.getId());
+        Baraja baraja = GameSessionManager.getBaraja(partida.getId());
+        baraja.repartirCarta(); // quemar
+        for (int i = 0; i < 3; i++) {
+            partida.getCartasComunitarias().add(baraja.repartirCarta());
+        }
+
+        assertEquals(FaseJuego.FLOP, GameSessionManager.getFase(partida.getId()));
+        assertEquals(3, partida.getCartasComunitarias().size());
+    }
+
 }

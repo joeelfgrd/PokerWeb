@@ -183,6 +183,7 @@ public class PartidaService {
      * @param idPartida ID de la partida.
      * @return El estado de la partida.
      */
+    @Transactional
     public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
 
@@ -204,12 +205,14 @@ public class PartidaService {
 
             estadoJugadores.add(estadoJugador);
         }
+        String idJugadorTurno = GameSessionManager.getJugadorEnTurno(idPartida, partida.getJugadores());
 
         return new EstadoPartidaDTO(
                 GameSessionManager.getFase(idPartida),
                 partida.getBote(),
                 partida.getCartasComunitarias(),
-                estadoJugadores
+                estadoJugadores,
+                idJugadorTurno
         );
     }
     /**

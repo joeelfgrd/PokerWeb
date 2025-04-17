@@ -30,25 +30,6 @@ public class EvaluadorManos {
         return ganador;
     }
 
-    public static Jugador determinarGanadorEntre(List<Jugador> jugadores, List<Carta> comunitarias) {
-        Jugador ganador = null;
-        ManoEvaluada mejorMano = null;
-
-        for (Jugador jugador : jugadores) {
-            if (jugador.getMano() == null) continue;
-
-            List<Carta> todas = new ArrayList<>(jugador.getMano().getCartas());
-            todas.addAll(comunitarias);
-
-            ManoEvaluada evaluada = EvaluadorManos.evaluar(todas);
-            if (mejorMano == null || evaluada.compareTo(mejorMano) > 0) {
-                mejorMano = evaluada;
-                ganador = jugador;
-            }
-        }
-
-        return ganador;
-    }
 
     public static List<Jugador> determinarGanadoresEntre(List<Jugador> jugadores, List<Carta> comunitarias) {
         List<Jugador> ganadores = new ArrayList<>();

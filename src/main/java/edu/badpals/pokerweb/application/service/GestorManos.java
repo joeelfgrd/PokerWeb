@@ -45,7 +45,10 @@ public class GestorManos {
 
             Mano mano = new Mano(manoJugador);
             jugador.setMano(mano);
-            manosRepartidas.put(jugador.getId(), manoJugador);
+            if (jugador.getUsuario() != null) {
+                String idUsuario = jugador.getUsuario().getId();
+                manosRepartidas.put(idUsuario, manoJugador);
+            }
         }
 
         partidaRepository.save(partida);
@@ -67,8 +70,8 @@ public class GestorManos {
             throw new PartidaFinalizadaException(idPartida);
         }
 
-        // Reiniciar baraja y fase
-        GameSessionManager.reiniciarFaseYBaraja(idPartida);
+        // Reiniciar baraja, fase y avanzar dealer
+        GameSessionManager.reiniciarFaseYBaraja(idPartida, partida.getJugadores());
         Baraja baraja = GameSessionManager.getBaraja(idPartida);
 
         // Limpiar estado de la partida
@@ -77,7 +80,7 @@ public class GestorManos {
         partida.setBote(0);
         partida.getJugadoresQueHanActuado().clear();
 
-        // Repartir nuevas cartas
+        // Repartir nuevas manos y reactivar jugadores con fichas
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.getFichas() > 0) {
                 jugador.setActivo(true);
@@ -93,9 +96,27 @@ public class GestorManos {
             }
         }
 
+        // Aplicar ciegas
+        List<Jugador> jugadores = partida.getJugadores();
+        int dealer = GameSessionManager.getDealerIndex(idPartida);
+        int sbIndex = (dealer + 1) % jugadores.size();
+        int bbIndex = (dealer + 2) % jugadores.size();
+
+        Jugador smallBlind = jugadores.get(sbIndex);
+        Jugador bigBlind = jugadores.get(bbIndex);
+
+        smallBlind.setFichas(smallBlind.getFichas() - 10);
+        bigBlind.setFichas(bigBlind.getFichas() - 20);
+
+        partida.getApuestasActuales().put(smallBlind.getId(), 10);
+        partida.getApuestasActuales().put(bigBlind.getId(), 20);
+        partida.setBote(30);
+
+        // Guardar y devolver
         partidaRepository.save(partida);
         return partida;
     }
+
 
     private Partida obtenerPartida(String idPartida) {
         return partidaRepository.findById(idPartida)

@@ -28,28 +28,25 @@ public class GestorFases {
      */
     public boolean rondaDeApuestasFinalizada(Partida partida) {
         Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int apuestaMaxima = 0;
-        int jugadoresActivos = 0;
-
-        for (Integer cantidad : apuestas.values()) {
-            if (cantidad > apuestaMaxima) {
-                apuestaMaxima = cantidad;
-            }
-        }
+        int apuestaMaxima = apuestas.values().stream().mapToInt(Integer::intValue).max().orElse(0);
 
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.isActivo() && !jugador.isAllIn()) {
-                jugadoresActivos++;
-
                 int apuestaJugador = apuestas.getOrDefault(jugador.getId(), 0);
-                if (apuestaJugador < apuestaMaxima) {
+
+                // Si no ha actuado y no ha igualado la máxima, la ronda no ha terminado
+                if (!partida.getJugadoresQueHanActuado().contains(jugador.getId())
+                        && apuestaJugador < apuestaMaxima) {
                     return false;
                 }
             }
         }
-
-        return partida.getJugadoresQueHanActuado().size() >= jugadoresActivos;
+        System.out.println("✅ Apuestas: " + apuestas);
+        System.out.println("✅ Han actuado: " + partida.getJugadoresQueHanActuado());
+        System.out.println("✅ Apuesta máxima: " + apuestaMaxima);
+        return true;
     }
+
 
     /**
      * Avanza la fase del juego si corresponde.

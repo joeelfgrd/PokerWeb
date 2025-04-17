@@ -5,6 +5,8 @@ public class MensajeWebSocketDTO {
     private String idUsuario;
     private String codigoInvitacion;
     private Integer cantidad;
+    private String idPartida;
+
 
     // Getters y setters
     public String getAccion() {
@@ -37,5 +39,12 @@ public class MensajeWebSocketDTO {
 
     public void setCantidad(Integer cantidad) {
         this.cantidad = cantidad;
+    }
+
+    public String getIdPartida() {
+        return idPartida;
+    }
+    public void setIdPartida(String idPartida) {
+        this.idPartida = idPartida;
     }
 }
