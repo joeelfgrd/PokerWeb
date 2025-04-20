@@ -1,5 +1,6 @@
 package edu.badpals.pokerweb.application.service;
 
+import edu.badpals.pokerweb.domain.enums.FaseJuego;
 import edu.badpals.pokerweb.domain.exceptions.*;
 import edu.badpals.pokerweb.domain.services.GameSessionManager;
 import edu.badpals.pokerweb.domain.services.GestorApuestas;
@@ -56,20 +57,33 @@ public class PartidaService {
         return gestorPartidas.crearPartida(idUsuario);
     }
 
+    /**
+     * Permite a un usuario unirse a una partida existente.
+     *
+     * @param idPartida ID de la partida.
+     * @param idUsuario ID del usuario que se unirá.
+     * @return La partida actualizada.
+     */
     public Partida unirseAPartida(String idPartida, String idUsuario) {
         return gestorPartidas.unirseAPartida(idPartida, idUsuario);
     }
 
+    /**
+     * Inicia una nueva mano en la partida.
+     *
+     * @param idPartida ID de la partida.
+     * @return La partida con la nueva mano iniciada.
+     */
     @Transactional
     public Partida iniciarNuevaMano(String idPartida) {
         return gestorManos.iniciarNuevaMano(idPartida);
     }
 
     /**
-     * Reparte cartas a los jugadores de la partida.
+     * Reparte las cartas privadas a los jugadores en la partida.
      *
      * @param idPartida ID de la partida.
-     * @return Un mapa con el ID del jugador como clave y su mano como valor.
+     * @return Un mapa con el ID del jugador como clave y sus cartas privadas como valor.
      */
     @Transactional
     public Map<String, List<Carta>> repartirManosPrivadas(String idPartida) {
@@ -89,7 +103,9 @@ public class PartidaService {
         Partida partida = obtenerPartida(idPartida);
         gestorApuestas.apostar(partida, idJugador, cantidad);
         partidaRepository.save(partida);
-        return avanzarFaseSiCorresponde(idPartida);
+        avanzarFaseSiCorresponde(idPartida);
+        resolverSiTodosAllIn(idPartida);
+        return partida;
     }
 
     /**
@@ -99,14 +115,16 @@ public class PartidaService {
      * @param idJugador ID del jugador que iguala.
      * @return La partida actualizada.
      */
+
     @Transactional
     public Partida igualar(String idPartida, String idJugador) {
         Partida partida = obtenerPartida(idPartida);
         gestorApuestas.igualar(partida, idJugador);
         partidaRepository.save(partida);
-        return avanzarFaseSiCorresponde(idPartida);
+        avanzarFaseSiCorresponde(idPartida);
+        resolverSiTodosAllIn(idPartida);
+        return partida;
     }
-
 
     /**
      * Realiza una acción de pasar en la partida.
@@ -120,7 +138,9 @@ public class PartidaService {
         Partida partida = obtenerPartida(idPartida);
         gestorApuestas.pasar(partida, idJugador);
         partidaRepository.save(partida);
-        return avanzarFaseSiCorresponde(idPartida);
+        avanzarFaseSiCorresponde(idPartida);
+        resolverSiTodosAllIn(idPartida);
+        return partida;
     }
 
     /**
@@ -135,7 +155,9 @@ public class PartidaService {
         Partida partida = obtenerPartida(idPartida);
         gestorApuestas.retirarse(partida, idJugador);
         partidaRepository.save(partida);
-        return avanzarFaseSiCorresponde(idPartida);
+        avanzarFaseSiCorresponde(idPartida);
+        resolverSiTodosAllIn(idPartida);
+        return partida;
     }
 
 
@@ -151,7 +173,9 @@ public class PartidaService {
         Partida partida = obtenerPartida(idPartida);
         gestorApuestas.allIn(partida, idJugador);
         partidaRepository.save(partida);
-        return avanzarFaseSiCorresponde(idPartida);
+        avanzarFaseSiCorresponde(idPartida);
+        resolverSiTodosAllIn(idPartida);
+        return partida;
     }
 
 
@@ -186,14 +210,53 @@ public class PartidaService {
     @Transactional
     public EstadoPartidaDTO obtenerEstadoPartida(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
+        List<EstadoJugadorDTO> estadoJugadores = obtenerEstadoJugadores(partida);
+        String idJugadorTurno = GameSessionManager.getJugadorEnTurno(idPartida, partida.getJugadores());
 
+        return new EstadoPartidaDTO(
+                GameSessionManager.getFase(idPartida),
+                partida.getBote(),
+                partida.getCartasComunitarias(),
+                estadoJugadores,
+                idJugadorTurno
+        );
+    }
+
+    /**
+     * Verifica si todos los jugadores están all-in y avanza la fase si es necesario.
+     *
+     * @param idPartida ID de la partida.
+     */
+    private void resolverSiTodosAllIn(String idPartida) {
+        Partida partida = obtenerPartida(idPartida);
+
+        boolean todosAllIn = partida.getJugadores().stream()
+                .filter(Jugador::isActivo)
+                .allMatch(Jugador::isAllIn);
+        // Aqui treparto flop/turn/river automáticamente
+        if (todosAllIn && GameSessionManager.getFase(idPartida) != FaseJuego.SHOWDOWN) {
+            while (GameSessionManager.getFase(idPartida) != FaseJuego.SHOWDOWN) {
+                avanzarFaseSiCorresponde(idPartida);
+            }
+        }
+
+        if (GameSessionManager.getFase(idPartida) == FaseJuego.SHOWDOWN) {
+            ResultadoShowdownDTO resultado = resolverShowdown(idPartida);
+            // Aquí puedo emitir el mensaje o dejar que lo haga WebSocketHandler
+        }
+    }
+
+    /**
+     * Obtiene la lista de jugadores y sus respectivos estados.
+     *
+     * @param partida La partida en curso.
+     * @return Lista de los estados de los jugadores.
+     */
+    private List<EstadoJugadorDTO> obtenerEstadoJugadores(Partida partida) {
         List<EstadoJugadorDTO> estadoJugadores = new ArrayList<>();
 
         for (Jugador jugador : partida.getJugadores()) {
-            List<Carta> mano = null;
-            if (jugador.getMano() != null) {
-                mano = jugador.getMano().getCartas();
-            }
+            List<Carta> mano = jugador.getMano() != null ? jugador.getMano().getCartas() : null;
 
             EstadoJugadorDTO estadoJugador = new EstadoJugadorDTO(
                     jugador.getUsuario().getNombre(),
@@ -205,16 +268,10 @@ public class PartidaService {
 
             estadoJugadores.add(estadoJugador);
         }
-        String idJugadorTurno = GameSessionManager.getJugadorEnTurno(idPartida, partida.getJugadores());
 
-        return new EstadoPartidaDTO(
-                GameSessionManager.getFase(idPartida),
-                partida.getBote(),
-                partida.getCartasComunitarias(),
-                estadoJugadores,
-                idJugadorTurno
-        );
+        return estadoJugadores;
     }
+
     /**
      * Obtiene la partida por su ID.
      *
