@@ -14,11 +14,8 @@ public class EvaluadorManos {
 
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.isActivo() && jugador.getMano() != null) {
-                List<Carta> todasCartas = new ArrayList<>();
-                todasCartas.addAll(jugador.getMano().getCartas());
-                todasCartas.addAll(partida.getCartasComunitarias());
-
-                ManoEvaluada manoEvaluada = EvaluadorManos.evaluar(todasCartas);
+                List<Carta> cartasDelJugador = obtenerCartasDelJugador(jugador, partida);
+                ManoEvaluada manoEvaluada = evaluar(cartasDelJugador);
 
                 if (mejorMano == null || manoEvaluada.compareTo(mejorMano) > 0) {
                     mejorMano = manoEvaluada;
@@ -30,74 +27,162 @@ public class EvaluadorManos {
         return ganador;
     }
 
+    public static List<Jugador> determinarGanadoresEntre(List<Jugador> jugadores, List<Carta> cartasComunitarias) {
+        if (jugadores == null || jugadores.isEmpty()) return new ArrayList<>();
 
-    public static List<Jugador> determinarGanadoresEntre(List<Jugador> jugadores, List<Carta> comunitarias) {
-        List<Jugador> ganadores = new ArrayList<>();
-        ManoEvaluada mejorMano = null;
-
+        Map<Jugador, ManoEvaluada> evaluaciones = new HashMap<>();
         for (Jugador jugador : jugadores) {
             if (jugador.getMano() == null) continue;
+            List<Carta> cartasDelJugador = obtenerCartasDelJugador(jugador, cartasComunitarias);
+            evaluaciones.put(jugador, evaluar(cartasDelJugador));
+        }
 
-            List<Carta> todas = new ArrayList<>(jugador.getMano().getCartas());
-            todas.addAll(comunitarias);
+        ManoEvaluada mejorMano = obtenerMejorMano(evaluaciones);
+        return obtenerGanadores(evaluaciones, mejorMano);
+    }
 
-            ManoEvaluada manoActual = EvaluadorManos.evaluar(todas);
+    private static List<Carta> obtenerCartasDelJugador(Jugador jugador, List<Carta> cartasComunitarias) {
+        List<Carta> todasLasCartas = new ArrayList<>(jugador.getMano().getCartas());
+        todasLasCartas.addAll(cartasComunitarias);
+        return todasLasCartas;
+    }
 
-            if (mejorMano == null || manoActual.compareTo(mejorMano) > 0) {
-                mejorMano = manoActual;
-                ganadores.clear();
-                ganadores.add(jugador);
-            } else if (manoActual.equals(mejorMano)) {
-                ganadores.add(jugador);
+    private static List<Carta> obtenerCartasDelJugador(Jugador jugador, Partida partida) {
+        List<Carta> todasLasCartas = new ArrayList<>(jugador.getMano().getCartas());
+        todasLasCartas.addAll(partida.getCartasComunitarias());
+        return todasLasCartas;
+    }
+
+    private static ManoEvaluada obtenerMejorMano(Map<Jugador, ManoEvaluada> evaluaciones) {
+        ManoEvaluada mejorMano = null;
+        for (ManoEvaluada manoEvaluada : evaluaciones.values()) {
+            if (mejorMano == null || manoEvaluada.compareTo(mejorMano) > 0) {
+                mejorMano = manoEvaluada;
             }
         }
+        return mejorMano;
+    }
+
+    private static List<Jugador> obtenerGanadores(Map<Jugador, ManoEvaluada> evaluaciones, ManoEvaluada mejorMano) {
+        List<Jugador> ganadores = new ArrayList<>();
+        for (Map.Entry<Jugador, ManoEvaluada> entry : evaluaciones.entrySet()) {
+            if (entry.getValue().compareTo(mejorMano) == 0) {
+                ganadores.add(entry.getKey());
+            }
+        }
+
+        // Si no se encontró un ganador, usamos la carta más alta como desempate
+        if (ganadores.isEmpty()) {
+            int cartaAlta = obtenerCartaAltaDeManos(evaluaciones.keySet());
+            for (Jugador jugador : evaluaciones.keySet()) {
+                int cartaAltaJugador = obtenerCartaAltaJugador(jugador);
+                if (cartaAltaJugador == cartaAlta) {
+                    ganadores.add(jugador);
+                }
+            }
+        }
+
         return ganadores;
+    }
+
+    private static int obtenerCartaAltaDeManos(Set<Jugador> jugadores) {
+        int maxCarta = 0;
+        for (Jugador jugador : jugadores) {
+            int cartaAlta = obtenerCartaAltaJugador(jugador);
+            if (cartaAlta > maxCarta) {
+                maxCarta = cartaAlta;
+            }
+        }
+        return maxCarta;
+    }
+
+    private static int obtenerCartaAltaJugador(Jugador jugador) {
+        return jugador.getMano().getCartas().stream()
+                .mapToInt(Carta::getNumero)
+                .max()
+                .orElse(0);
     }
 
     public static ManoEvaluada evaluar(List<Carta> cartas) {
         if (tienePoker(cartas)) {
-            int valor = obtenerValorPorRepeticion(cartas, 4);
-            List<Integer> kickers = obtenerKickers(cartas, List.of(valor));
-            return new ManoEvaluada(700, valor, kickers);
+            return evaluarPoker(cartas);
         }
         if (tieneFull(cartas)) {
-            int trio = obtenerValorPorRepeticion(cartas, 3);
-            int pareja = obtenerValorPorRepeticionExcluyendo(cartas, 2, List.of(trio));
-            return new ManoEvaluada(600, trio, List.of(pareja));
+            return evaluarFull(cartas);
         }
         if (tieneColor(cartas)) {
-            List<Carta> color = obtenerCartasMismoPalo(cartas);
-            List<Integer> valores = color.stream().map(Carta::getNumero).sorted(Comparator.reverseOrder()).toList();
-            return new ManoEvaluada(500, valores.get(0), valores.subList(1, Math.min(5, valores.size())));
+            return evaluarColor(cartas);
         }
         if (tieneEscalera(cartas)) {
-            int alta = obtenerCartaAltaEscalera(cartas);
-            return new ManoEvaluada(400, alta, List.of());
+            return evaluarEscalera(cartas);
         }
         if (tieneTrio(cartas)) {
-            int valor = obtenerValorPorRepeticion(cartas, 3);
-            List<Integer> kickers = obtenerKickers(cartas, List.of(valor));
-            return new ManoEvaluada(300, valor, kickers);
+            return evaluarTrio(cartas);
         }
         if (tieneDoblePareja(cartas)) {
-            List<Integer> parejas = obtenerParejas(cartas);
-            parejas.sort(Comparator.reverseOrder());
-            List<Integer> kickers = obtenerKickers(cartas, parejas);
-            return new ManoEvaluada(200, parejas.get(0), List.of(parejas.get(1), kickers.get(0)));
+            return evaluarDoblePareja(cartas);
         }
         if (tienePareja(cartas)) {
-            int valor = obtenerValorPorRepeticion(cartas, 2);
-            List<Integer> kickers = obtenerKickers(cartas, List.of(valor));
-            return new ManoEvaluada(100, valor, kickers);
+            return evaluarPareja(cartas);
         }
 
-        List<Integer> ordenadas = cartas.stream()
-                .map(Carta::getNumero)
-                .distinct()
-                .sorted(Comparator.reverseOrder())
-                .toList();
+        return evaluarCartaAlta(cartas);
+    }
 
-        return new ManoEvaluada(0, ordenadas.get(0), ordenadas.subList(1, Math.min(4, ordenadas.size())));
+    private static ManoEvaluada evaluarPoker(List<Carta> cartas) {
+        int valor = obtenerValorPorRepeticion(cartas, 4);
+        List<Integer> kickers = obtenerKickers(cartas, List.of(valor));
+        return new ManoEvaluada(700, valor, kickers);
+    }
+
+    private static ManoEvaluada evaluarFull(List<Carta> cartas) {
+        int trio = obtenerValorPorRepeticion(cartas, 3);
+        int pareja = obtenerValorPorRepeticionExcluyendo(cartas, 2, List.of(trio));
+        return new ManoEvaluada(600, trio, List.of(pareja));
+    }
+
+    private static ManoEvaluada evaluarColor(List<Carta> cartas) {
+        List<Carta> color = obtenerCartasMismoPalo(cartas);
+        List<Integer> valores = obtenerValoresCartas(color);
+        return new ManoEvaluada(500, valores.get(0), valores.subList(1, Math.min(5, valores.size())));
+    }
+
+    private static ManoEvaluada evaluarEscalera(List<Carta> cartas) {
+        int alta = obtenerCartaAltaEscalera(cartas);
+        return new ManoEvaluada(400, alta, List.of());
+    }
+
+    private static ManoEvaluada evaluarTrio(List<Carta> cartas) {
+        int valor = obtenerValorPorRepeticion(cartas, 3);
+        List<Integer> kickers = obtenerKickers(cartas, List.of(valor));
+        return new ManoEvaluada(300, valor, kickers);
+    }
+
+    private static ManoEvaluada evaluarDoblePareja(List<Carta> cartas) {
+        List<Integer> parejas = obtenerParejas(cartas);
+        parejas.sort(Comparator.reverseOrder());
+        List<Integer> kickers = obtenerKickers(cartas, parejas);
+        return new ManoEvaluada(200, parejas.get(0), List.of(parejas.get(1), kickers.get(0)));
+    }
+
+    private static ManoEvaluada evaluarPareja(List<Carta> cartas) {
+        int valor = obtenerValorPorRepeticion(cartas, 2);
+        List<Integer> kickers = obtenerKickers(cartas, List.of(valor));
+        return new ManoEvaluada(100, valor, kickers);
+    }
+
+    private static ManoEvaluada evaluarCartaAlta(List<Carta> cartas) {
+        List<Integer> valoresOrdenados = obtenerValoresCartas(cartas);
+        return new ManoEvaluada(0, valoresOrdenados.get(0), valoresOrdenados.subList(1, Math.min(4, valoresOrdenados.size())));
+    }
+
+    private static List<Integer> obtenerValoresCartas(List<Carta> cartas) {
+        List<Integer> valores = new ArrayList<>();
+        for (Carta carta : cartas) {
+            valores.add(carta.getNumero());
+        }
+        Collections.sort(valores, Collections.reverseOrder());
+        return valores;
     }
 
     private static boolean tienePoker(List<Carta> cartas) {
@@ -141,11 +226,12 @@ public class EvaluadorManos {
         for (Carta carta : cartas) {
             contador.put(carta.getNumero(), contador.getOrDefault(carta.getNumero(), 0) + 1);
         }
-        return contador.entrySet().stream()
-                .filter(e -> e.getValue() == repeticiones)
-                .map(Map.Entry::getKey)
-                .max(Integer::compareTo)
-                .orElse(0);
+        for (Map.Entry<Integer, Integer> entry : contador.entrySet()) {
+            if (entry.getValue() == repeticiones) {
+                return entry.getKey();
+            }
+        }
+        return 0;
     }
 
     private static int obtenerValorPorRepeticionExcluyendo(List<Carta> cartas, int repeticiones, List<Integer> excluidos) {
@@ -153,36 +239,39 @@ public class EvaluadorManos {
         for (Carta carta : cartas) {
             contador.put(carta.getNumero(), contador.getOrDefault(carta.getNumero(), 0) + 1);
         }
-        return contador.entrySet().stream()
-                .filter(e -> e.getValue() >= repeticiones && !excluidos.contains(e.getKey()))
-                .map(Map.Entry::getKey)
-                .max(Integer::compareTo)
-                .orElse(0);
+        for (Map.Entry<Integer, Integer> entry : contador.entrySet()) {
+            if (entry.getValue() == repeticiones && !excluidos.contains(entry.getKey())) {
+                return entry.getKey();
+            }
+        }
+        return 0;
     }
 
     private static List<Integer> obtenerKickers(List<Carta> cartas, List<Integer> excluidos) {
-        return cartas.stream()
-                .map(Carta::getNumero)
-                .filter(n -> !excluidos.contains(n))
-                .distinct()
-                .sorted(Comparator.reverseOrder())
-                .limit(3)
-                .toList();
+        List<Integer> kickers = new ArrayList<>();
+        for (Carta carta : cartas) {
+            if (!excluidos.contains(carta.getNumero())) {
+                kickers.add(carta.getNumero());
+            }
+        }
+        Collections.sort(kickers, Collections.reverseOrder());
+        return kickers.size() > 3 ? kickers.subList(0, 3) : kickers;
     }
 
     private static List<Carta> obtenerCartasMismoPalo(List<Carta> cartas) {
-        Map<Integer, List<Carta>> porPalo = new HashMap<>();
+        Map<Integer, List<Carta>> cartasPorPalo = new HashMap<>();
         for (Carta carta : cartas) {
-            porPalo.computeIfAbsent(carta.getIdPalo(), k -> new ArrayList<>()).add(carta);
+            cartasPorPalo.computeIfAbsent(carta.getIdPalo(), k -> new ArrayList<>()).add(carta);
         }
-        return porPalo.values().stream()
-                .filter(lista -> lista.size() >= 5)
-                .map(lista -> lista.stream()
-                        .sorted(Comparator.comparingInt(Carta::getNumero).reversed())
-                        .limit(5)
-                        .toList())
-                .findFirst()
-                .orElse(new ArrayList<>());
+
+        for (List<Carta> cartasDePalo : cartasPorPalo.values()) {
+            if (cartasDePalo.size() >= 5) {
+                Collections.sort(cartasDePalo, Comparator.comparingInt(Carta::getNumero).reversed());
+                return cartasDePalo.subList(0, 5);
+            }
+        }
+
+        return new ArrayList<>();
     }
 
     private static List<Integer> obtenerParejas(List<Carta> cartas) {
@@ -190,9 +279,12 @@ public class EvaluadorManos {
         for (Carta carta : cartas) {
             contador.put(carta.getNumero(), contador.getOrDefault(carta.getNumero(), 0) + 1);
         }
+
         List<Integer> parejas = new ArrayList<>();
         for (Map.Entry<Integer, Integer> entry : contador.entrySet()) {
-            if (entry.getValue() >= 2) parejas.add(entry.getKey());
+            if (entry.getValue() >= 2) {
+                parejas.add(entry.getKey());
+            }
         }
         return parejas;
     }
@@ -204,34 +296,22 @@ public class EvaluadorManos {
         }
 
         List<Integer> valores = new ArrayList<>(valoresUnicos);
-        valores.sort(Collections.reverseOrder()); // de mayor a menor
+        Collections.sort(valores, Collections.reverseOrder());
 
         for (int i = 0; i <= valores.size() - 5; i++) {
             int inicio = valores.get(i);
-            boolean escalera = true;
+            boolean esEscalera = true;
             for (int j = 1; j < 5; j++) {
                 if (!valoresUnicos.contains(inicio - j)) {
-                    escalera = false;
+                    esEscalera = false;
                     break;
                 }
             }
-            if (escalera) return inicio;
+            if (esEscalera) return inicio;
         }
 
-        // Escalera baja A-2-3-4-5 (donde 14 es el As)
-        if (valoresUnicos.containsAll(List.of(14, 2, 3, 4, 5))) return 5;
+        if (valoresUnicos.containsAll(Arrays.asList(14, 2, 3, 4, 5))) return 5;
 
         return 0;
     }
-
-    private static List<Integer> rellenarKickers(List<Integer> kickers) {
-        List<Integer> resultado = new ArrayList<>(kickers);
-        while (resultado.size() < 3) {
-            resultado.add(0); // Rellenamos con ceros si faltan
-        }
-        return resultado;
-    }
-
-
-
 }

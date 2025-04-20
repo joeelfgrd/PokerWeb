@@ -89,6 +89,10 @@ public class GameSessionManager {
         int nuevoTurno = (getDealerIndex(partidaId) + 1) % jugadores.size();
         turnoJugadoresPartida.put(partidaId, nuevoTurno);
     }
+    public static void setFase(String partidaId, FaseJuego nuevaFase) {
+        fasePartida.put(partidaId, nuevaFase);
+        turnoJugadoresPartida.put(partidaId, 0); // Reinicia turno
+    }
 
 
     public static String getJugadorEnTurno(String partidaId, List<Jugador> jugadores) {
@@ -107,6 +111,12 @@ public class GameSessionManager {
         }
         throw new IllegalStateException("Todos inactivos o all-in");
     }
+
+    public static void forzarFase(String partidaId, FaseJuego nuevaFase) {
+        fasePartida.put(partidaId, nuevaFase);
+        turnoJugadoresPartida.put(partidaId, 0);
+    }
+
 
     public static void forzarTurnoPorJugador(String partidaId, String idJugador, List<Jugador> jugadores) {
         for (int i = 0; i < jugadores.size(); i++) {

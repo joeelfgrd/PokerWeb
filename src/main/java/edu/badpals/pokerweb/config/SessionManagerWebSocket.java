@@ -71,4 +71,5 @@ public class SessionManagerWebSocket {
             sessionOpt.get().sendMessage(new TextMessage(mensaje));
         }
     }
+
 }
