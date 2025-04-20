@@ -183,11 +183,10 @@ public class PartidaService {
      * Avanza la fase de la partida si corresponde.
      *
      * @param idPartida ID de la partida.
-     * @return La partida actualizada.
      */
     @Transactional
-    public Partida avanzarFaseSiCorresponde(String idPartida) {
-        return gestorFases.avanzarFaseSiCorresponde(idPartida);
+    public void avanzarFaseSiCorresponde(String idPartida) {
+        gestorFases.avanzarFaseSiCorresponde(idPartida);
     }
 
     /**
