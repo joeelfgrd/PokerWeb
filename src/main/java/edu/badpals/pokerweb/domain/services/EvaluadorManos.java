@@ -71,7 +71,6 @@ public class EvaluadorManos {
             }
         }
 
-        // Si no se encontró un ganador, usamos la carta más alta como desempate
         if (ganadores.isEmpty()) {
             int cartaAlta = obtenerCartaAltaDeManos(evaluaciones.keySet());
             for (Jugador jugador : evaluaciones.keySet()) {
