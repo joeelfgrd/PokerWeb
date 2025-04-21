@@ -3,6 +3,8 @@ package edu.badpals.pokerweb.domain.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 public class Jugador {
 
@@ -97,5 +99,18 @@ public class Jugador {
 
     public void setAllIn(boolean allIn) {
         this.allIn = allIn;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Jugador jugador = (Jugador) o;
+        return fichas == jugador.fichas && activo == jugador.activo && allIn == jugador.allIn && Objects.equals(id, jugador.id) && Objects.equals(mano, jugador.mano) && Objects.equals(mesa, jugador.mesa) && Objects.equals(partida, jugador.partida) && Objects.equals(usuario, jugador.usuario);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, fichas, activo, mano, mesa, partida, usuario, allIn);
     }
 }

@@ -3,7 +3,6 @@ package edu.badpals.pokerweb.application.service;
 import edu.badpals.pokerweb.domain.enums.FaseJuego;
 import edu.badpals.pokerweb.domain.exceptions.PartidaNoEncontradaException;
 import edu.badpals.pokerweb.domain.model.Baraja;
-import edu.badpals.pokerweb.domain.model.Carta;
 import edu.badpals.pokerweb.domain.model.Jugador;
 import edu.badpals.pokerweb.domain.model.Partida;
 import edu.badpals.pokerweb.domain.services.GameSessionManager;
@@ -56,14 +55,13 @@ public class GestorFases {
      * Avanza la fase del juego si corresponde.
      *
      * @param idPartida ID de la partida.
-     * @return La partida actualizada tras avanzar de fase.
      */
     @Transactional
-    public Partida avanzarFaseSiCorresponde(String idPartida) {
+    public void avanzarFaseSiCorresponde(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
 
         if (!rondaDeApuestasFinalizada(partida)) {
-            return partida;
+            return;
         }
 
         partida.getApuestasActuales().clear();
@@ -104,11 +102,7 @@ public class GestorFases {
                         partida.getCartasComunitarias().add(baraja.repartirCarta());
                     }
                 }
-                case TURN -> {
-                    baraja.repartirCarta();
-                    partida.getCartasComunitarias().add(baraja.repartirCarta());
-                }
-                case RIVER -> {
+                case TURN, RIVER -> {
                     baraja.repartirCarta();
                     partida.getCartasComunitarias().add(baraja.repartirCarta());
                 }
@@ -120,7 +114,6 @@ public class GestorFases {
 
         partida.getJugadoresQueHanActuado().clear();
         partidaRepository.save(partida);
-        return partida;
     }
 
 
