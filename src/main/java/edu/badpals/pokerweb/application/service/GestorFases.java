@@ -3,7 +3,6 @@ package edu.badpals.pokerweb.application.service;
 import edu.badpals.pokerweb.domain.enums.FaseJuego;
 import edu.badpals.pokerweb.domain.exceptions.PartidaNoEncontradaException;
 import edu.badpals.pokerweb.domain.model.Baraja;
-import edu.badpals.pokerweb.domain.model.Carta;
 import edu.badpals.pokerweb.domain.model.Jugador;
 import edu.badpals.pokerweb.domain.model.Partida;
 import edu.badpals.pokerweb.domain.services.GameSessionManager;
@@ -28,107 +27,114 @@ public class GestorFases {
      */
     public boolean rondaDeApuestasFinalizada(Partida partida) {
         Map<String, Integer> apuestas = partida.getApuestasActuales();
-        int apuestaMaxima = apuestas.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        int apuestaMaxima = obtenerApuestaMaxima(apuestas);
 
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.isActivo() && !jugador.isAllIn()) {
                 int apuestaJugador = apuestas.getOrDefault(jugador.getId(), 0);
 
-                // Si no ha actuado y no ha igualado la máxima, la ronda no ha terminado
-                if (!partida.getJugadoresQueHanActuado().contains(jugador.getId())) {
-                    if (apuestaMaxima == 0) {
-                        return false;
-                    } else if (apuestaJugador < apuestaMaxima) {
-                        return false;
-                    }
+                if (!jugadorHaActuado(partida, jugador) && apuestaJugador < apuestaMaxima) {
+                    return false;
                 }
-
             }
         }
-        System.out.println("✅ Apuestas: " + apuestas);
-        System.out.println("✅ Han actuado: " + partida.getJugadoresQueHanActuado());
-        System.out.println("✅ Apuesta máxima: " + apuestaMaxima);
         return true;
     }
 
+    private int obtenerApuestaMaxima(Map<String, Integer> apuestas) {
+        int apuestaMaxima = 0;
+        for (int apuesta : apuestas.values()) {
+            if (apuesta > apuestaMaxima) {
+                apuestaMaxima = apuesta;
+            }
+        }
+        return apuestaMaxima;
+    }
+
+    private boolean jugadorHaActuado(Partida partida, Jugador jugador) {
+        return partida.getJugadoresQueHanActuado().contains(jugador.getId());
+    }
 
     /**
      * Avanza la fase del juego si corresponde.
      *
      * @param idPartida ID de la partida.
-     * @return La partida actualizada tras avanzar de fase.
      */
     @Transactional
-    public Partida avanzarFaseSiCorresponde(String idPartida) {
+    public void avanzarFaseSiCorresponde(String idPartida) {
         Partida partida = obtenerPartida(idPartida);
 
         if (!rondaDeApuestasFinalizada(partida)) {
-            return partida;
+            return;
         }
 
-        partida.getApuestasActuales().clear();
+        limpiarApuestas(partida);
 
-        boolean todosAllIn = partida.getJugadores().stream()
-                .filter(Jugador::isActivo)
-                .allMatch(Jugador::isAllIn);
-
-        if (todosAllIn) {
-            FaseJuego fase = GameSessionManager.getFase(idPartida);
-            Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
-            if (fase == FaseJuego.PREFLOP) {
-                baraja.repartirCarta();
-                for (int i = 0; i < 3; i++) {
-                    partida.getCartasComunitarias().add(baraja.repartirCarta());
-                }
-            }
-            if (fase == FaseJuego.PREFLOP || fase == FaseJuego.FLOP) {
-                baraja.repartirCarta();
-                partida.getCartasComunitarias().add(baraja.repartirCarta());
-            }
-            if (fase == FaseJuego.PREFLOP || fase == FaseJuego.FLOP || fase == FaseJuego.TURN) {
-                baraja.repartirCarta();
-                partida.getCartasComunitarias().add(baraja.repartirCarta());
-            }
-
-            GameSessionManager.forzarFase(idPartida, FaseJuego.SHOWDOWN);
+        if (todosJugadoresEstanAllIn(partida)) {
+            manejarFaseShowdown(idPartida, partida);
         } else {
-            GameSessionManager.avanzarFase(idPartida);
-            FaseJuego nuevaFase = GameSessionManager.getFase(idPartida);
-            Baraja baraja = GameSessionManager.getBaraja(idPartida);
-
-            switch (nuevaFase) {
-                case FLOP -> {
-                    baraja.repartirCarta();
-                    for (int i = 0; i < 3; i++) {
-                        partida.getCartasComunitarias().add(baraja.repartirCarta());
-                    }
-                }
-                case TURN -> {
-                    baraja.repartirCarta();
-                    partida.getCartasComunitarias().add(baraja.repartirCarta());
-                }
-                case RIVER -> {
-                    baraja.repartirCarta();
-                    partida.getCartasComunitarias().add(baraja.repartirCarta());
-                }
-                case SHOWDOWN -> {
-                    // Lo gestiona otro servicio
-                }
-            }
+            avanzarFaseNormal(idPartida, partida);
         }
 
         partida.getJugadoresQueHanActuado().clear();
         partidaRepository.save(partida);
-        return partida;
     }
 
+    private void limpiarApuestas(Partida partida) {
+        partida.getApuestasActuales().clear();
+    }
 
+    private boolean todosJugadoresEstanAllIn(Partida partida) {
+        for (Jugador jugador : partida.getJugadores()) {
+            if (jugador.isActivo() && !jugador.isAllIn()) {
+                return false;
+            }
+        }
+        return true;
+    }
 
+    private void manejarFaseShowdown(String idPartida, Partida partida) {
+        FaseJuego fase = GameSessionManager.getFase(idPartida);
+        Baraja baraja = GameSessionManager.getBaraja(idPartida);
 
+        if (fase == FaseJuego.PREFLOP) {
+            repartirCartas(baraja, partida, 3);
+        }
+        if (fase == FaseJuego.PREFLOP || fase == FaseJuego.FLOP) {
+            repartirCartas(baraja, partida, 1);
+        }
+        if (fase == FaseJuego.PREFLOP || fase == FaseJuego.FLOP || fase == FaseJuego.TURN) {
+            repartirCartas(baraja, partida, 1);
+        }
+
+        GameSessionManager.forzarFase(idPartida, FaseJuego.SHOWDOWN);
+    }
+
+    private void repartirCartas(Baraja baraja, Partida partida, int cantidad) {
+        for (int i = 0; i < cantidad; i++) {
+            partida.getCartasComunitarias().add(baraja.repartirCarta());
+        }
+    }
+
+    private void avanzarFaseNormal(String idPartida, Partida partida) {
+        GameSessionManager.avanzarFase(idPartida);
+        FaseJuego nuevaFase = GameSessionManager.getFase(idPartida);
+        Baraja baraja = GameSessionManager.getBaraja(idPartida);
+
+        switch (nuevaFase) {
+            case FLOP:
+                repartirCartas(baraja, partida, 3);
+                break;
+            case TURN:
+            case RIVER:
+                repartirCartas(baraja, partida, 1);
+                break;
+        }
+    }
 
     private Partida obtenerPartida(String idPartida) {
         return partidaRepository.findById(idPartida)
                 .orElseThrow(() -> new PartidaNoEncontradaException(idPartida));
     }
 }
+

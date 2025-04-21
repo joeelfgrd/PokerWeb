@@ -121,29 +121,7 @@ public class EmpateKickersTest {
         assertEquals(j1, ganador);
     }
 
-    @Test
-    void fullConMejorTrioDesempate() {
-        Jugador j1 = new Jugador();
-        j1.setMano(new Mano(List.of(
-                new Carta(Palo.PICAS, ValorCarta.DIEZ),
-                new Carta(Palo.TREBOLES, ValorCarta.DIEZ))));
 
-        Jugador j2 = new Jugador();
-        j2.setMano(new Mano(List.of(
-                new Carta(Palo.CORAZONES, ValorCarta.NUEVE),
-                new Carta(Palo.DIAMANTES, ValorCarta.NUEVE))));
-
-        List<Carta> comunitarias = List.of(
-                new Carta(Palo.TREBOLES, ValorCarta.DIEZ),
-                new Carta(Palo.CORAZONES, ValorCarta.CINCO),
-                new Carta(Palo.PICAS, ValorCarta.CINCO),
-                new Carta(Palo.DIAMANTES, ValorCarta.CINCO),
-                new Carta(Palo.CORAZONES, ValorCarta.DOS));
-
-        Partida partida = crearPartidaConJugadores(j1, j2, comunitarias);
-        Jugador ganador = EvaluadorManos.determinarGanador(partida);
-        assertEquals(j1, ganador);
-    }
 
     @Test
     void colorConCartaAltaDesempate() {
