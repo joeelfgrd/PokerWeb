@@ -1,5 +1,8 @@
 package edu.badpals.pokerweb.domain.enums;
-
+/**
+ * Enum que representa los diferentes valores de una carta en una baraja de poker para facilitar el cálculo y evaluacion de las manos.
+ * Los valores son: DOS, TRES, CUATRO, CINCO, SEIS, SIETE, OCHO, NUEVE, DIEZ, J, Q, K y A.
+ */
 public enum ValorCarta {
     DOS("2", 2),
     TRES("3", 3),
