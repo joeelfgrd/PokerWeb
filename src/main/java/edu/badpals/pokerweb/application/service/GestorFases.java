@@ -41,6 +41,12 @@ public class GestorFases {
         return true;
     }
 
+    /**
+        * Obtiene la apuesta máxima de los jugadores.
+        *
+        * @param apuestas Mapa de apuestas de los jugadores.
+        * @return La apuesta máxima.
+        */
     private int obtenerApuestaMaxima(Map<String, Integer> apuestas) {
         int apuestaMaxima = 0;
         for (int apuesta : apuestas.values()) {
@@ -51,6 +57,13 @@ public class GestorFases {
         return apuestaMaxima;
     }
 
+    /**
+     * Verifica si un jugador ha actuado en la ronda actual.
+     *
+     * @param partida La partida actual.
+     * @param jugador El jugador a verificar.
+     * @return true si el jugador ha actuado.
+     */
     private boolean jugadorHaActuado(Partida partida, Jugador jugador) {
         return partida.getJugadoresQueHanActuado().contains(jugador.getId());
     }
@@ -80,10 +93,22 @@ public class GestorFases {
         partidaRepository.save(partida);
     }
 
+    /**
+     * Resuelve la situación cuando todos los jugadores están all-in.
+     *
+     * @param partida La partida actual.
+     */
     private void limpiarApuestas(Partida partida) {
         partida.getApuestasActuales().clear();
     }
 
+
+    /**
+     * Verifica si todos los jugadores están all-in.
+     *
+     * @param partida La partida actual.
+     * @return true si todos los jugadores están all-in.
+     */
     private boolean todosJugadoresEstanAllIn(Partida partida) {
         for (Jugador jugador : partida.getJugadores()) {
             if (jugador.isActivo() && !jugador.isAllIn()) {
@@ -93,6 +118,12 @@ public class GestorFases {
         return true;
     }
 
+    /**
+     * Maneja la fase de showdown.
+     *
+     * @param idPartida ID de la partida.
+     * @param partida   La partida actual.
+     */
     private void manejarFaseShowdown(String idPartida, Partida partida) {
         FaseJuego fase = GameSessionManager.getFase(idPartida);
         Baraja baraja = GameSessionManager.getBaraja(idPartida);
@@ -110,12 +141,25 @@ public class GestorFases {
         GameSessionManager.forzarFase(idPartida, FaseJuego.SHOWDOWN);
     }
 
+    /**
+     * Reparte cartas a la partida.
+     *
+     * @param baraja   La baraja de cartas.
+     * @param partida  La partida actual.
+     * @param cantidad La cantidad de cartas a repartir.
+     */
     private void repartirCartas(Baraja baraja, Partida partida, int cantidad) {
         for (int i = 0; i < cantidad; i++) {
             partida.getCartasComunitarias().add(baraja.repartirCarta());
         }
     }
 
+    /**
+     * Avanza la fase normal del juego.
+     *
+     * @param idPartida ID de la partida.
+     * @param partida   La partida actual.
+     */
     private void avanzarFaseNormal(String idPartida, Partida partida) {
         GameSessionManager.avanzarFase(idPartida);
         FaseJuego nuevaFase = GameSessionManager.getFase(idPartida);
@@ -131,7 +175,13 @@ public class GestorFases {
                 break;
         }
     }
-
+    /**
+     * Obtiene la partida por su ID.
+     *
+     * @param idPartida ID de la partida.
+     * @return La partida correspondiente.
+     * @throws PartidaNoEncontradaException Si no se encuentra la partida.
+     */
     private Partida obtenerPartida(String idPartida) {
         return partidaRepository.findById(idPartida)
                 .orElseThrow(() -> new PartidaNoEncontradaException(idPartida));
